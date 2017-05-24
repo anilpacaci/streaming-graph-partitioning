@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Tue May 23 23:11:47 EDT 2017:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-015c-3870-5d5f-000012bdb828 
+on database directory /Users/utakuzen/Documents/4b/URA/graph-partitioning/Zhuoran's work/csv_to_adjacency_list/metastore_db with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@166b11e 
+Loaded from file:/usr/local/Cellar/apache-spark/2.1.1/libexec/jars/derby-10.12.1.1.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.8.0_101-b13
+user.dir=/Users/utakuzen/Documents/4b/URA/graph-partitioning/Zhuoran's work/csv_to_adjacency_list
+os.name=Mac OS X
+os.arch=x86_64
+os.version=10.10.5
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''
