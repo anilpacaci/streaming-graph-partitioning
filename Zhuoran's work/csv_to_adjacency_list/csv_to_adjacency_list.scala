@@ -1,130 +1,185 @@
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.SparkContext
+import org.apache.spark.SparkContext._
+import org.apache.spark.SparkConf
 
-val sqlContext = new SQLContext(sc)
+case class Edge(val target: Long, val vlabel: String, val elabel: String, val creationDate: Long)
 
-//Souce vertex person
+object csvConversion {
+    def main(args: Array[String]) {
+        //create spark context
+        val conf = new SparkConf().setAppName("Adjacency List Converison");
+        val sc = new SparkContext(conf)
 
-val knows = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/person_knows_person_0_0.csv")
+        //set up paths
+        val read_path = new StringBuilder();
+        val write_path = new StringBuilder();
+        read_path.append(args(0)).append("/")
+        write_path.append(args(1));
 
-val knowsDF = knows.toDF("person1", "person2", "creationDate");
+        import org.apache.spark.sql.SQLContext
+        import org.apache.spark.sql.types.{StructType, StructField, StringType, LongType}
+        import java.text.SimpleDateFormat
+        import java.util.TimeZone
 
-val email = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/person_email_emailaddress_0_0.csv")
 
-val emailDF = email.toDF("person_email", "email")
+        val sqlContext = new SQLContext(sc)
 
-val hasInterest = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/person_hasInterest_tag_0_0.csv")
+        import sqlContext.implicits._
 
-val hasInterestDF = hasInterest.toDF("person_interest", "tag")
+        val customScheme = StructType(Array(
+        StructField("fist_id", LongType, true),
+        StructField("second_id", LongType, true),
+        StructField("time_stamp", StringType, true)))
 
-val person_isLocatedIn = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/person_isLocatedIn_place_0_0.csv")
+        val creationDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+        creationDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"))
 
-val person_isLocatedInDF = person_isLocatedIn.toDF("person_locate", "place")
+        //to convert each Edge to string
+        def edge_to_string(e: Edge) : String = {
+            val output = new StringBuilder()
 
-val likes_comment = sqlContext.read.format("com.databricks.spark.csv").option("header","true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/person_likes_comment_0_0.csv")
+            output.append(e.target).append(":").append(e.vlabel).append(":").append(e.elabel)
 
-val likes_commentDF = likes_comment.toDF("person", "comment", "creationDate")
+            if(e.creationDate != 0){
+                output.append(":").append("StartDate:").append(e.creationDate);
+            }
+            return output.toString();
+        }
 
-val likes_post = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/person_likes_post_0_0.csv")
 
-val likes_postDF = likes_post.toDF("person_post", "post", "creationDate")
+        //to convert each row to string
+        def output_csv_line (rdd: (Long, Array[Edge]), vtype: String) : String = {
+            //throw each Edge to the above function then append then together with the Long
+            val output = new StringBuilder()
+            output.append(rdd._1).append(":").append(vtype)
 
-val speaks = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/person_speaks_language_0_0.csv")
+            for(e  <- rdd._2) {
+                output.append(" ").append(edge_to_string(e))
+            }
+            return output.toString
+        }
 
-val speaksDF = speaks.toDF("person_speak", "language")
+        //do conversion as before
 
-val studyAt = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/person_studyAt_organisation_0_0.csv")
+        //Souce vertex person
+        val knows_person = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("delimiter", "|").option("nullValue", "").schema(customScheme).load(read_path.toString + "person_knows_person_0_0.csv")
+        val knows = knows_person.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "person", "knows", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
 
-val studyAtDF = studyAt.toDF("person_study", "study_organisatoin", "classYear")
+        val hasInterest_person = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "person_hasInterest_tag_0_0.csv")
+        val hasInterest = hasInterest_person.map(row => ( row.getLong(0), Array(new Edge(row.getLong(1), "tag", "hasInterest", 0l)))).rdd
 
-val workAt = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/person_workAt_organisation_0_0.csv")
 
-val workAtDF = workAt.toDF("person_work", "work_organisation", "workFrom")
+        val isLocatedIn_person = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "person_isLocatedIn_place_0_0.csv")
+        val person_isLocatedIn = isLocatedIn_person.map(row => ( row.getLong(0), Array(new Edge(row.getLong(1), "place", "isLocatedIn", 0l)))).rdd
 
-//Source Vertex comment
-val comment_hasCreator = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/comment_hasCreator_person_0_0.csv")
 
-val comment_hasCreatorDF = comment_hasCreator.toDF("comment", "person")
+        val likes_comment_person = sqlContext.read.format("com.databricks.spark.csv").option("header","true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "person_likes_comment_0_0.csv")
+        val likes_comment = likes_comment_person.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "comment", "likes", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
 
-val hasTag = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/comment_hasTag_tag_0_0.csv")
 
-val hasTagDF = hasTag.toDF("comment_tag", "tag")
+        val likes_post_person = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "person_likes_post_0_0.csv")
+        val likes_post = likes_post_person.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "post", "likes", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
 
-val comment_isLocatedIn = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/comment_isLocatedIn_place_0_0.csv")
 
-val comment_isLocatedInDF = comment_isLocatedIn.toDF("comment_locate", "place")
+        val studyAt_person = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "person_studyAt_organisation_0_0.csv")
+        val studyAt = studyAt_person.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "organisation", "studyAt", row.getString(2).toLong )) ) ).rdd
 
-val replyOf_comment = sqlContext.read.format("com.databricks.spark.csv").option("header","true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/comment_replyOf_comment_0_0.csv")
 
-val replyOf_commentDF = replyOf_comment.toDF("comment1", "comment2")
+        val workAt_person = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "person_workAt_organisation_0_0.csv")
+        val workAt = workAt_person.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "organisation", "workAt", row.getString(2).toLong )) ) ).rdd
 
-val replyOf_post = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/comment_replyOf_post_0_0.csv")
 
-val replyOf_postDF = replyOf_post.toDF("comment_post", "post")
+        //Source Vertex comment
+        val hasCreator_comment = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "comment_hasCreator_person_0_0.csv")
+        val hasCreator = hasCreator_comment.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "person", "hasCreator", 0l )))).rdd
 
+        val hasTag_comment = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "comment_hasTag_tag_0_0.csv")
+        val hasTag =  hasTag_comment.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "tag", "hasTag", 0l )))).rdd
 
-//Source Vertex forum
-val containerOf = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/forum_containerOf_post_0_0.csv")
 
-val containerOfDF = containerOf.toDF("forum_contain", "post")
+        val isLocatedIn_comment = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "comment_isLocatedIn_place_0_0.csv")
+        val comment_isLocatedIn =  isLocatedIn_comment.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "place", "isLocatedIn", 0l )))).rdd
 
-val hasMemberWithPosts = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/forum_hasMemberWithPosts_person_0_0.csv")
 
-val hasMemberWithPostsDF = hasMemberWithPosts.toDF("forum", "member_with_post", "joinDate")
+        val replyOf_comment_comment = sqlContext.read.format("com.databricks.spark.csv").option("header","true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "comment_replyOf_comment_0_0.csv")
+        val replyOf_comment =  replyOf_comment_comment.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "comment", "replyOf", 0l )))).rdd
 
-val hasMember = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/forum_hasMember_person_0_0.csv")
 
-val hasMemberDF = hasMember.toDF("forum_member", "member", "joinDate")
 
-val hasModerator = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/forum_hasModerator_person_0_0.csv")
+        val replyOf_post_comment = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "comment_replyOf_post_0_0.csv")
+        val replyOf_post = replyOf_post_comment.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "post", "replyOf", 0l )))).rdd
 
-val hasModeratorDF = hasModerator.toDF("forum_moderator", "person")
 
-val forum_hasTag = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/forum_hasTag_tag_0_0.csv")
+        //Source Vertex forum
+        val containerOf_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_containerOf_post_0_0.csv")
+        val containerOf = containerOf_forum.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "post", "containerOf", 0 )))).rdd
 
-val forum_hasTagDF = forum_hasTag.toDF("forum_tag", "tag")
+        val hasMemberWithPosts_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasMemberWithPosts_person_0_0.csv")
+        val hasMemberWithPosts = hasMemberWithPosts_forum.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "person", "hasMemberWithPosts", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
 
-val joined_forum = hasMemberWithPostsDF.join(containerOfDF, containerOfDF("forum_contain") === hasMemberWithPostsDF("forum"), "inner").join(hasMemberDF, hasMemberDF("forum_member") === hasMemberWithPostsDF("forum"), "inner").join(hasModeratorDF, hasModeratorDF("forum_moderator") === hasMemberWithPostsDF("forum"), "inner").join(forum_hasTagDF, forum_hasTagDF("forum_tag") === hasMemberWithPostsDF("forum"), "inner").groupBy("forum")agg(collect_list("person") as "moderator")
 
-//Source Vertex organisation
-val organisation_isLocatedIn = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/organisation_isLocatedIn_place_0_0.csv")
+        val hasMember_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasMember_person_0_0.csv")
+        val hasMember = hasMember_forum.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "person", "hasMember", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
 
-val organisation_isLocatedInDF = organisation_isLocatedIn.toDF("organisation", "place")
 
-//Souce Vertex post
-val post_hasCreator = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/post_hasCreator_person_0_0.csv")
+        val hasModerator_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasModerator_person_0_0.csv")
+        val hasModerator = hasModerator_forum.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "person", "hasModerator", 0 )) ) ).rdd
 
-val post_hasCreatorDF = post_hasCreator.toDF("post", "person")
 
-val post_hasTag = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/post_hasTag_tag_0_0.csv")
+        val hasTag_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasTag_tag_0_0.csv")
+        val forum_hasTag = hasTag_forum.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "tag", "hasTag", 0 )) ) ).rdd
 
-val post_hasTagDF = post_hasTag.toDF("post_tag", "tag")
 
-val post_isLocatedIn = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/post_isLocatedIn_place_0_0.csv")
+        //Source Vertex organisation
+        val isLocatedIn_organisation = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "organisation_isLocatedIn_place_0_0.csv")
+        val organisation_isLocatedIn = isLocatedIn_organisation.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "place", "isLocatedIn", 0 )) ) ).rdd
 
-val post_isLocatedInDF = post_isLocatedIn.toDF("post_locate", "place")
 
-//Source Vertex place
-val isPartOf = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("inferSchema", "true").option("delimiter", "|").load("/Users/utakuzen/Documents/4b/URA/validation_set/place_isPartOf_place_0_0.csv")
+        //Souce Vertex post
+        val hasCreator_post = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "post_hasCreator_person_0_0.csv")
+        val post_hasCreator = hasCreator_post.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "person", "hasCreator", 0)) ) ).rdd
 
-val isPartOfDF = isPartOf.toDF("place1", "place2")
+        val hasTag_post = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "post_hasTag_tag_0_0.csv")
+        val post_hasTag = hasTag_post.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "tag", "hasTag", 0 )) ) ).rdd
 
-//join tables with source vertex person
-val joined_person = likes_commentDF.join(knowsDF, likes_commentDF("person") === knowsDF("person1"), "inner").join(emailDF, emailDF("person_email") === likes_commentDF("person"), "inner").join(hasInterestDF, hasInterestDF("person_interest") === likes_commentDF("person"), "inner").join(person_isLocatedInDF, person_isLocatedInDF("person_locate") === likes_commentDF("person"), "inner").join(likes_postDF, likes_postDF("person_post") === likes_commentDF("person"), "inner").join(speaksDF, speaksDF("person_speak") === likes_commentDF("person"), "inner").join(studyAtDF, studyAtDF("person_study") === likes_commentDF("person"), "inner").join(workAtDF, workAtDF("person_work") === likes_commentDF("person"), "inner").groupBy("person").agg(collect_list("comment") as "comments", collect_list("person2") as "friends", collect_list("email") as "emails")
 
-//join tables with source vertex comment
-val joined_comment = comment_hasCreatorDF.join(hasTagDF, hasTagDF("comment_tag") === comment_hasCreatorDF("comment"), "inner").join(replyOf_postDF, replyOf_postDF("comment_post") === comment_hasCreatorDF("comment"), "inner").join(comment_isLocatedInDF, comment_isLocatedInDF("comment_locate") === comment_hasCreatorDF("comment"), "inner").join(replyOf_commentDF, replyOf_commentDF("comment1") === comment_hasCreatorDF("comment"), "inner").groupBy("comment").agg(collect_list("comment2") as "reply")
+        val isLocatedIn_post = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "post_isLocatedIn_place_0_0.csv")
+        val post_isLocatedIn = isLocatedIn_post.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "place", "isLocatedIn", 0 )) ) ).rdd
 
+        //Source Vertex place
+        val isPartOf_place = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "place_isPartOf_place_0_0.csv")
+        val isPartOf = isPartOf_place.map(row => ( row.getLong(0), Array(new Edge( row.getLong(1), "place", "isPartOf", 0 )) ) ).rdd
 
 
-//join tables with source vertex forum
+        //Union all tables with source Vertex person
+        val person_joined = knows.union(hasInterest).union(person_isLocatedIn).union(likes_comment).union(likes_post).union(studyAt).union(workAt).reduceByKey((l1, l2) => l1 ++ l2);
 
-val joined_forum = hasMemberWithPostsDF.join(containerOfDF, containerOfDF("forum_contain") === hasMemberWithPostsDF("forum"), "inner").join(hasMemberDF, hasMemberDF("forum_member") === hasMemberWithPostsDF("forum"), "inner").join(hasModeratorDF, hasModeratorDF("forum_moderator") === hasMemberWithPostsDF("forum"), "inner").join(forum_hasTagDF, forum_hasTagDF("forum_tag") === hasMemberWithPostsDF("forum"), "inner").groupBy("forum")agg(collect_list("person") as "moderator")
+        //Union all tables with source Vertex comment
+        val comment_joined = hasCreator.union(hasTag).union(comment_isLocatedIn).union(replyOf_comment).union(replyOf_post).reduceByKey((l1, l2) => l1 ++ l2);
 
-//join tables with source vertex post
+        //Union all tables with source Vertex forum
+        val forum_joined = containerOf.union(hasMemberWithPosts).union(hasMember).union(hasModerator).union(forum_hasTag).reduceByKey((l1, l2) => l1 ++ l2);
 
-val joined_forum = post_hasCreatorDF.join(post_hasTagDF, post_hasCreatorDF("post") === post_hasTagDF("post_tag"), "inner").join(post_isLocatedInDF, post_isLocatedInDF("post_locate") === post_hasCreatorDF("post"), "inner").groupBy("post").agg(collect_list("person") as "creator")
+        //Union all tables with source Vertex post
+        val post_joined = post_hasCreator.union(post_hasTag).union(post_isLocatedIn).reduceByKey((l1, l2) => l1 ++ l2);
 
+        val organisation_joined = organisation_isLocatedIn.reduceByKey((l1, l2) => l1 ++ l2)
+        val place_joined = isPartOf.reduceByKey((l1, l2) => l1 ++ l2);
 
 
+        //For each unioned table above, use map to map them to strings using functions defined at the top
+        val post_mapped = post_joined.map ( r => output_csv_line(r, "post"))
+        val forum_mapped = forum_joined.map(r => output_csv_line(r, "forum"))
+        val comment_mapped = comment_joined.map(r => output_csv_line(r, "comment"))
+        val person_mapped = person_joined.map(r => output_csv_line(r, "person"))
+        val organisation_mapped = organisation_joined.map(r => output_csv_line(r, "organisation"))
+        val place_mapped = place_joined.map(r => output_csv_line(r, "place"));
 
+        //output to file
+        val output = person_mapped.union(comment_mapped).union(post_mapped).union(forum_mapped).union(organisation_mapped).union(place_mapped)
 
+        output.repartition(1).saveAsTextFile(write_path.toString)
+
+        sc.stop()
+    }
+}
