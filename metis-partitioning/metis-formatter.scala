@@ -19,13 +19,13 @@ object MetisFormatter {
     }
 
     def main(args: Array[String]) {
-        val conf = new SparkConf().setAppName("METIS-Formatter");
-        val sc = new SparkContext(conf)
+        //val conf = new SparkConf().setAppName("METIS-Formatter");
+        //val sc = new SparkContext(conf)
 
         // read input file
-        val adjacencyText = sc.textFile("file:///home/apacaci/Projects/graph-partitioning/codebase/metis-partitioning/sparksee-validation/adjacency.txt")
+        val adjacencyText = sc.textFile("file:///u4/apacaci/Projects/graph-partitioning/codebase/metis-partitioning/sparksee-validation/adjacency.txt")
         // trim unnecessary information
-        val adjacency = adjacencyText.map( l => (l.split(" ")(0), parseEdges(l) ) )
+        val adjacency = adjacencyText.map( l => (l.split(" ")(0), MetisFormatter.parseEdges(l) ) )
 
         // METIS needs undirected graph, therefore we will add reverse of the each original edge
         val undirectedEdges = adjacency.flatMap(vertex => {
@@ -37,7 +37,8 @@ object MetisFormatter {
         val undirectedAdjacency = undirectedEdges.map( edge => (edge._1, Array(edge._2) ) ).reduceByKey( (l1, l2) => l1 ++ l2)
 
         // assign order to each vertex in adjacency list, which will create the actual lookup table for METIS partitioner
-        val lookup = undirectedAdjacency.map( t => t._1 ).zipWithIndex
+        // zipWithIndex indices start by 1 by default, so need post processing
+        val lookup = undirectedAdjacency.map( t => t._1 ).zipWithIndex.map( t => (t._1, t._2 + 1))
 
         //generate oldid - newid lookup table on one pass
         lookup.repartition(1).saveAsTextFile("file:///u4/apacaci/Projects/graph-partitioning/codebase/metis-partitioning/sparksee-validation/lookup")
