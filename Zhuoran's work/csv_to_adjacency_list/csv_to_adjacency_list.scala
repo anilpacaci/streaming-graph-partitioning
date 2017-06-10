@@ -2,6 +2,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.SparkConf
 
+
 case class Edge(val target: String, val elabel: String, val creationDate: Long)
 
 object csvConversion {
@@ -34,17 +35,20 @@ def main(args: Array[String]) {
     val creationDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     creationDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"))
 
+
     //to convert each Edge to string
     def edge_to_string(e: Edge) : String = {
     val output = new StringBuilder()
 
     output.append(e.elabel).append(":").append(e.target)
 
+
     if(e.creationDate != 0){
     output.append(":").append("StartDate:").append(e.creationDate);
     }
     return output.toString();
     }
+
 
 
     //to convert each row to string
@@ -58,18 +62,18 @@ def main(args: Array[String]) {
         val incoming_edges = rdd._3
 
         for(e  <- outgoing_edges) {
-        output.append(edge_to_string(e)).append(",")
+            output.append(edge_to_string(e)).append(",")
         }
-        output.deleteCharAt(output.length()-1)
-        output.append("|")
+            output.deleteCharAt(output.length()-1)
+            output.append("|")
 
         if(incoming_edges.isEmpty) {
-        return output.toString
+            return output.toString
         }
         val converted = incoming_edges.get
 
         for(e <- converted) {
-        output.append(edge_to_string(e)).append(",")
+            output.append(edge_to_string(e)).append(",")
         }
 
         output.deleteCharAt(output.length()-1)
@@ -100,17 +104,19 @@ def main(args: Array[String]) {
     val likes_post = likes_post_person.map(row => ("person:" + row.getLong(0).toString, Array(new Edge( "post:" + row.getLong(1), "likes", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
 
 
+
     val studyAt_person = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "person_studyAt_organisation_0_0.csv")
     val studyAt = studyAt_person.map(row => ( "person:" + row.getLong(0).toString, Array(new Edge( "organisation:" + row.getLong(1), "studyAt", row.getString(2).toLong )) ) ).rdd
+
 
 
     val workAt_person = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "person_workAt_organisation_0_0.csv")
     val workAt = workAt_person.map(row => ("person:" + row.getLong(0).toString, Array(new Edge( "organisation:" + row.getLong(1), "workAt", row.getString(2).toLong )) ) ).rdd
 
 
-
     //Source Vertex comment
     val hasCreator_comment = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "comment_hasCreator_person_0_0.csv")
+
 
     val hasCreator = hasCreator_comment.map(row => ("comment:" + row.getLong(0).toString, Array(new Edge("person:" + row.getLong(1), "hasCreator", 0l )))).rdd
 
@@ -125,6 +131,7 @@ def main(args: Array[String]) {
     val replyOf_comment_comment = sqlContext.read.format("com.databricks.spark.csv").option("header","true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "comment_replyOf_comment_0_0.csv")
     val replyOf_comment =  replyOf_comment_comment.map(row => ("comment:" +  row.getLong(0).toString, Array(new Edge( "comment:" + row.getLong(1), "replyOf", 0l )))).rdd
 
+
     val replyOf_post_comment = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "comment_replyOf_post_0_0.csv")
 
     val replyOf_post = replyOf_post_comment.map(row => ("comment:" +  row.getLong(0).toString, Array(new Edge( "post:" + row.getLong(1), "replyOf", 0l )))).rdd
@@ -137,10 +144,8 @@ def main(args: Array[String]) {
     val hasMemberWithPosts_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasMemberWithPosts_person_0_0.csv")
     val hasMemberWithPosts = hasMemberWithPosts_forum.map(row => ("forum:" +  row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1),"hasMemberWithPosts", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
 
-
     val hasMember_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasMember_person_0_0.csv")
     val hasMember = hasMember_forum.map(row => ("forum:" +  row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1), "hasMember", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
-
 
     val hasModerator_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasModerator_person_0_0.csv")
     val hasModerator = hasModerator_forum.map(row => ( "forum:" + row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1), "hasModerator", 0 )) ) ).rdd
@@ -153,13 +158,13 @@ def main(args: Array[String]) {
     //Source Vertex organisation
     val isLocatedIn_organisation = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "organisation_isLocatedIn_place_0_0.csv")
 
+
     val organisation_isLocatedIn = isLocatedIn_organisation.map(row => ("organisation:" +  row.getLong(0).toString, Array(new Edge("place:" + row.getLong(1), "isLocatedIn", 0 )) ) ).rdd
 
 
 
     //Souce Vertex post
     val hasCreator_post = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "post_hasCreator_person_0_0.csv")
-
     val post_hasCreator = hasCreator_post.map(row => ("post:" +  row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1), "hasCreator", 0)) ) ).rdd
 
     val hasTag_post = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "post_hasTag_tag_0_0.csv")
@@ -179,6 +184,7 @@ def main(args: Array[String]) {
 
     //Union all tables with source Vertex comment
     val comment_joined = hasCreator.union(hasTag).union(comment_isLocatedIn).union(replyOf_comment).union(replyOf_post).reduceByKey((l1, l2) => l1 ++ l2);
+
 
     //Union all tables with source Vertex forum
     val forum_joined = containerOf.union(hasMemberWithPosts).union(hasMember).union(hasModerator).union(forum_hasTag).reduceByKey((l1, l2) => l1 ++ l2);
@@ -213,6 +219,7 @@ def main(args: Array[String]) {
 
     val result = flattened.map(r => output_csv_line(r))
     result.repartition(1).saveAsTextFile(write_path.toString)
+
 
 
     sc.stop()
