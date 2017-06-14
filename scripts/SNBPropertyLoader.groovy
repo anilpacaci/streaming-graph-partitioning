@@ -45,12 +45,12 @@ import java.util.Timer
 import java.util.TimerTask
 
 /**
- * This is a Groovy Script to run inside gremlin console, for loading LDBC SNB data into Tinkerpop Competible Graph.
+ * This is a Groovy Script to run inside gremlin console, for loading LDBC SNB Vertex Properties data into Tinkerpop Competible Graph.
  * original written by Jonathan Ellithorpe <jde@cs.stanford.edu> <a href="https://github.com/PlatformLab/ldbc-snb-impls/blob/master/snb-interactive-titan/src/main/java/net/ellitron/ldbcsnbimpls/interactive/titan/TitanGraphLoader.java">TitanGraphLoader </>
  *
  * @author Anil Pacaci <apacaci@uwaterloo.ca>
  */
-class SNBParser {
+class SNBPropertyLoader {
 
     static TX_MAX_RETRIES = 1000
 
@@ -147,12 +147,14 @@ class SNBParser {
         SharedGraphReader graphReader
         ElementType elementType
         AtomicLong counter
+        GraphTraversalSource g
 
         GraphLoader(Graph graph, SharedGraphReader graphReader, ElementType elementType) {
             this.graph = graph
             this.graphReader = graphReader
             this.elementType = elementType
             this.counter = graphReader.getCounter()
+            this.g = graph.traversal()
         }
 
         @Override
@@ -196,7 +198,7 @@ class SNBParser {
                                 for (int j = 0; j < colVals.length; ++j) {
                                     if (colNames[j].equals("id")) {
                                         identifier = entityName + ":" + colVals[j]
-                                        propertiesMap.put("iid", identifier);
+                                        //propertiesMap.put("iid", identifier);
                                         propertiesMap.put("iid_long", Long.parseLong(colVals[j]))
                                     } else if (colNames[j].equals("birthday")) {
                                         propertiesMap.put(colNames[j], birthdayDateFormat.parse(colVals[j]).getTime());
@@ -206,15 +208,13 @@ class SNBParser {
                                         propertiesMap.put(colNames[j], colVals[j]);
                                     }
                                 }
-                                propertiesMap.put(T.label, entityName);
 
-                                List<Object> keyValues = new ArrayList<>();
+                                //Vertex vertex = graph.addVertex(keyValues.toArray());
+                                Vertex vertex = g.V().has(entityName, "iid",identifier).next();
+
                                 propertiesMap.forEach { key, val ->
-                                    keyValues.add(key);
-                                    keyValues.add(val);
+                                    vertex.property(key, val);
                                 }
-
-                                Vertex vertex = graph.addVertex(keyValues.toArray());
 
                                 //populate IDMapping if enabled
                                 if (isIdMappingEnabled) {
@@ -271,7 +271,7 @@ class SNBParser {
                                     keyValues.add(val);
                                 }
 
-                                vertex1.addEdge(edgeLabel, vertex2, keyValues.toArray());
+                                // vertex1.addEdge(edgeLabel, vertex2, keyValues.toArray());
 
                                 if (edgeLabel.equals("knows")) {
                                     //TODO: this is implementation spefic, parameterize this
@@ -304,7 +304,7 @@ class SNBParser {
         }
     }
 
-    static void loadSNBGraph(Graph graph, String configurationFile) throws IOException {
+    static void loadVertexProperties(Graph graph, String configurationFile) throws IOException {
 
         Configuration configuration = new PropertiesConfiguration(configurationFile);
 
@@ -339,7 +339,6 @@ class SNBParser {
                 graphReader.stop()
             }
 
-
             for (String fileName : propertiesFiles) {
                 SharedGraphReader graphReader = new SharedGraphReader(Paths.get(inputBaseDir, fileName), batchSize, progReportPeriod)
                 List<GraphLoader> tasks = new ArrayList<GraphLoader>()
@@ -351,7 +350,6 @@ class SNBParser {
                 graphReader.stop()
             }
 
-
             for (String fileName : edgeFiles) {
                 SharedGraphReader graphReader = new SharedGraphReader(Paths.get(inputBaseDir, fileName), batchSize, progReportPeriod)
                 List<GraphLoader> tasks = new ArrayList<GraphLoader>()
@@ -362,7 +360,6 @@ class SNBParser {
                 executor.invokeAll(tasks)
                 graphReader.stop()
             }
-
 
         } catch (Exception e) {
             System.out.println("Exception: " + e);
