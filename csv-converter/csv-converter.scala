@@ -132,8 +132,8 @@ def main(args: Array[String]) {
     val containerOf_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_containerOf_post_0_0.csv")
     val containerOf = containerOf_forum.map(row => ("forum:" +  row.getLong(0).toString, Array(new Edge( "post:" + row.getLong(1), "containerOf", 0l )))).rdd
 
-    val hasMemberWithPosts_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasMemberWithPosts_person_0_0.csv")
-    val hasMemberWithPosts = hasMemberWithPosts_forum.map(row => ("forum:" +  row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1),"hasMemberWithPosts", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
+//    val hasMemberWithPosts_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasMemberWithPosts_person_0_0.csv")
+//    val hasMemberWithPosts = hasMemberWithPosts_forum.map(row => ("forum:" +  row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1),"hasMemberWithPosts", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
     val hasMember_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasMember_person_0_0.csv")
     val hasMember = hasMember_forum.map(row => ("forum:" +  row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1), "hasMember", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
 
@@ -165,6 +165,14 @@ def main(args: Array[String]) {
     val isPartOf_place = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "place_isPartOf_place_0_0.csv")
     val isPartOf = isPartOf_place.map(row => ("place:" + row.getLong(0).toString, Array(new Edge( "place:" + row.getLong(1), "isPartOf", 0l )) ) ).rdd
 
+    //source vertex tag
+    val hasType_tag = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "tag_hasType_tagclass_0_0.csv")
+    val hasType = hasType_tag.map(row => ("tag:" + row.getLong(0).toString, Array(new Edge( "tagclass:" + row.getLong(1), "hasType", 0l )) ) ).rdd
+
+    //source vertex tagclass
+    val isSubclassOf_tagclass = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "tagclass_isSubclassOf_tagclass_0_0.csv")
+    val isSubclassOf = isSubclassOf_tagclass.map(row => ("tagclass:" + row.getLong(0).toString, Array(new Edge( "tagclass:" + row.getLong(1), "isSubclassOf", 0l )) ) ).rdd
+
     //Union all tables with source Vertex person
     val person_joined = knows.union(hasInterest).union(person_isLocatedIn).union(likes_comment).union(likes_post).union(studyAt).union(workAt).reduceByKey((l1, l2) => l1 ++ l2);
 
@@ -173,16 +181,19 @@ def main(args: Array[String]) {
 
 
     //Union all tables with source Vertex forum
-    val forum_joined = containerOf.union(hasMemberWithPosts).union(hasMember).union(hasModerator).union(forum_hasTag).reduceByKey((l1, l2) => l1 ++ l2);
+    //val forum_joined = containerOf.union(hasMemberWithPosts).union(hasMember).union(hasModerator).union(forum_hasTag).reduceByKey((l1, l2) => l1 ++ l2);
+    val forum_joined = containerOf.union(hasMember).union(hasModerator).union(forum_hasTag).reduceByKey((l1, l2) => l1 ++ l2);
 
     //Union all tables with source Vertex post
     val post_joined = post_hasCreator.union(post_hasTag).union(post_isLocatedIn).reduceByKey((l1, l2) => l1 ++ l2);
 
     val organisation_joined = organisation_isLocatedIn.reduceByKey((l1, l2) => l1 ++ l2)
     val place_joined = isPartOf.reduceByKey((l1, l2) => l1 ++ l2);
+    val tag_joined = hasType.reduceByKey((l1, l2) => l1 ++ l2);
+    val tagclass_joined = isSubclassOf.reduceByKey((l1, l2) => l1 ++ l2);
 
 
-    val all_unioned = person_joined.union(comment_joined).union(forum_joined).union(organisation_joined).union(post_joined).union(place_joined)
+    val all_unioned = person_joined.union(comment_joined).union(forum_joined).union(organisation_joined).union(post_joined).union(place_joined).union(tag_joined).union(tagclass_joined)
 
     val reverse_edge = all_unioned.flatMap(vertex => {
         val sourceid = vertex._1

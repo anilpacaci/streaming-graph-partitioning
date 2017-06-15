@@ -23,7 +23,7 @@ object MetisFormatter {
         //val sc = new SparkContext(conf)
 
         // read input file
-        val adjacencyText = sc.textFile("file:///u4/apacaci/Projects/graph-partitioning/codebase/metis-partitioning/sparksee-validation/adjacency.txt")
+        val adjacencyText = sc.textFile("hdfs://192.168.152.200:9000/datasets/sf3_updates/social_network")
         // trim unnecessary information
         val adjacency = adjacencyText.map( l => (l.split(" ")(0), MetisFormatter.parseEdges(l) ) )
 
