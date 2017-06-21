@@ -138,8 +138,9 @@ def main(args: Array[String]) {
     val containerOf_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_containerOf_post_0_0.csv")
     val containerOf = containerOf_forum.map(row => ("forum:" +  row.getLong(0).toString, Array(new Edge( "post:" + row.getLong(1), "containerOf", 0 )))).rdd
 
-    val hasMemberWithPosts_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasMemberWithPosts_person_0_0.csv")
-    val hasMemberWithPosts = hasMemberWithPosts_forum.map(row => ("forum:" +  row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1),"hasMemberWithPosts", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
+    //val hasMemberWithPosts_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasMemberWithPosts_person_0_0.csv")
+    //val hasMemberWithPosts = hasMemberWithPosts_forum.map(row => ("forum:" +  row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1),"hasMemberWithPosts", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
+    
     val hasMember_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasMember_person_0_0.csv")
     val hasMember = hasMember_forum.map(row => ("forum:" +  row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1), "hasMember", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
 
@@ -148,7 +149,7 @@ def main(args: Array[String]) {
 
 
     val hasTag_forum = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "forum_hasTag_tag_0_0.csv")
-    val forum_hasTag = hasTag_forum.map(row => ( "forum:" + row.getLong(0).toString, Array(new Edge( "tags" + row.getLong(1), "hasTag", 0 )) ) ).rdd
+val forum_hasTag = hasTag_forum.map(row => ( "forum:" + row.getLong(0).toString, Array(new Edge( "tag:" + row.getLong(1), "hasTag", 0 )) ) ).rdd
 
 
     //Source Vertex organisation
@@ -181,7 +182,7 @@ def main(args: Array[String]) {
 
 
     //Union all tables with source Vertex forum
-    val forum_joined = containerOf.union(hasMemberWithPosts).union(hasMember).union(hasModerator).union(forum_hasTag).reduceByKey((l1, l2) => l1 ++ l2);
+    val forum_joined = containerOf.union(hasMember).union(hasModerator).union(forum_hasTag).reduceByKey((l1, l2) => l1 ++ l2);
 
     //Union all tables with source Vertex post
     val post_joined = post_hasCreator.union(post_hasTag).union(post_isLocatedIn).reduceByKey((l1, l2) => l1 ++ l2);
