@@ -57,7 +57,7 @@ class PartitionLookupImporter {
             long counter = 0
             while(it.hasNext()) {
                 String[] parts = it.nextLine().split(",")
-                String id = parts[0]
+                String id = parts[0] + "p"
                 Integer partition = Integer.valueOf(parts[1])
 
                 partitionMappingServer.setPartition(id, partition)
