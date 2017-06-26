@@ -23,9 +23,9 @@ public class Graph {
 	}
 	// Print value of each vertex along with the partition
 	// Finally calculate the overall edge-cut ratio
-	public void print(){
+	public void print(String outputFile){
 		try{
-		PrintWriter writer = new PrintWriter("output.txt", "UTF-8");
+		PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
 		for(int i = 0; i < size; i++){
 			writer.println(list_of_vertices[i].getValue() +
 					", " + list_of_vertices[i].getPartition());

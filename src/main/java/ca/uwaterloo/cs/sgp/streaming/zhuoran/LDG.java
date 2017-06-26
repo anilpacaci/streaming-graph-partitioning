@@ -163,7 +163,18 @@ public class LDG {
             e.printStackTrace();
         }
     }
-    public void print(){
-        graph.print();
+    public void print(String outputFile){
+        graph.print(outputFile);
+    }
+
+    public static void main(String[] args) {
+        String inputFile = args[0];
+        String outputFile = args[1];
+        Integer numberOfPartitions = Integer.parseInt(args[2]);
+        Double balanceSlack = Double.parseDouble(args[3]);
+        LDG ldg = new LDG(inputFile, numberOfPartitions, balanceSlack);
+        ldg.LDG_partitioning(inputFile, numberOfPartitions, balanceSlack, true);
+
+        ldg.print(outputFile);
     }
 }
