@@ -6,11 +6,11 @@ import java.io.IOException;
 public class Graph {
 	int size;
 	public Vertex[] list_of_vertices;
-	public HashMap<Integer, Integer> vertex_to_partition;
+	public HashMap<Long, Integer> vertex_to_partition;
 	
 	public Graph(int init_size){
 		size = init_size;
-		vertex_to_partition = new HashMap<Integer, Integer>();
+		vertex_to_partition = new HashMap<Long, Integer>();
 		list_of_vertices = new Vertex[init_size];
 	}
 	
@@ -27,8 +27,8 @@ public class Graph {
 		try{
 		PrintWriter writer = new PrintWriter("output.txt", "UTF-8");
 		for(int i = 0; i < size; i++){
-			writer.println("Vertex: " + list_of_vertices[i].getValue() +
-					" Partition: " + list_of_vertices[i].getPartition());
+			writer.println(list_of_vertices[i].getValue() +
+					", " + list_of_vertices[i].getPartition());
 		}
 		int edge_cut = 0;
 		int numEdges = 0;

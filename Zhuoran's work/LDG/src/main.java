@@ -3,8 +3,8 @@ import LinearDeterministic.LDG;
 public class main {
 
 	public static void main(String[] args) {
-		LDG ldg = new LDG("src/cit-HepTh-adjacency.txt", 20, 0.05);
-		ldg.LDG_partitioning("src/cit-HepTh-adjacency.txt", 20, 0.05);
+		LDG ldg = new LDG("src/part-00000", 100, 0.05);
+		ldg.LDG_partitioning("src/part-00000", 100, 0.05, true);
 
 		ldg.print();
 	}

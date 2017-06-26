@@ -7,17 +7,19 @@ package graph;
 // LinkedList
 
 public class Vertex {
-	int value;
+	long value;
 	int index;
+	String vlabel;
 	int partition;
 	
 	public int num_neighbors;
 	
 	public Vertex[] neighbors;
 	
-	public Vertex(int init_value, int i, int outDegree){
+	public Vertex(long init_value, int i, int outDegree, String label){
 		value = init_value;
 		index = i;
+		vlabel = label;
 		neighbors = new Vertex[outDegree];
 		num_neighbors = outDegree;
 		
@@ -31,8 +33,8 @@ public class Vertex {
 		return index;
 	}
 	
-	public int getValue(){
-		return value;
+	public String getValue(){
+		return vlabel;
 	}
 	
 	public int getPartition(){
