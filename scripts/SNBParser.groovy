@@ -58,6 +58,8 @@ class SNBParser {
     static isIdMappingEnabled = false
 
     static IDMapping idMappingServer = null
+    
+    static String ID_MAPPING_PREFIX = "M"
 
     static class SharedGraphReader {
 
@@ -397,14 +399,14 @@ class SNBParser {
         }
 
         public Long getId(String identifier) {
-            Object value = client.get(identifier);
+            Object value = client.get(ID_MAPPING_PREFIX + identifier);
             if (value == null)
                 return null;
             return (Long) value;
         }
 
         public void setId(String identifier, Long id) {
-            client.set(identifier, id)
+            client.set(ID_MAPPING_PREFIX + identifier, id)
         }
     }
 
