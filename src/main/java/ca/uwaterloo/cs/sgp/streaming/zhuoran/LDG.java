@@ -129,7 +129,7 @@ public class LDG {
             while(lineIterator.hasNext()){
                 String next = lineIterator.next();
                 //split each line by whitespace
-                if(next.contains("#")) continue; // skip first line
+                if(next.startsWith("#")) continue; // skip first line
                 String[] splitLine = next.split("\\|", -1);
                 String vertexIdentifier = splitLine[0];
                 String outEdges = splitLine[1];
