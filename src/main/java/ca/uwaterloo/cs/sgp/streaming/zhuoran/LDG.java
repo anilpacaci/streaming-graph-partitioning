@@ -50,7 +50,7 @@ public class LDG {
         }
         //capacity for each partition
         double exact_capacity = (numberOfVertices / k) * (1+slack);
-        capacity = (int)exact_capacity;
+        capacity = (int) exact_capacity;
 
         vertex_to_partition = new HashMap<>(numberOfVertices);
     }
@@ -166,6 +166,7 @@ public class LDG {
                 Map.Entry<String, Integer> entry = it.next();
                 writer.println(entry.getKey() + "," + entry.getValue());
             }
+            writer.close();
             System.out.println("# of edges:\t" + this.numberOfEdges);
             System.out.println("# of edgecut:\t" + this.numberOfEdgecut);
         } catch (FileNotFoundException e) {
