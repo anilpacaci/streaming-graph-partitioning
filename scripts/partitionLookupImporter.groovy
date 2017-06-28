@@ -45,13 +45,6 @@ class PartitionLookupImporter {
 
         String lookupFile = configuration.getString("partition.lookup")
 
-        isIdMappingEnabled = configuration.getBoolean("id.mapping")
-
-        if(isIdMappingEnabled) {
-            String[] servers = configuration.getStringArray("memcached.address")
-            partitionMappingServer = new PartitionMapping(servers)
-        }
-
         try {
             LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile), "UTF-8")
             long counter = 0
@@ -71,6 +64,34 @@ class PartitionLookupImporter {
             System.out.println("Exception: " + e);
             e.printStackTrace();
         }
+
+        System.out.println("# of keys: " + counter)
+
+        String vertexLookupFile = configuration.getString("vertex.lookup")
+
+        try {
+            LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile), "UTF-8")
+            long counter = 0
+            while(it.hasNext()) {
+                String[] parts = it.nextLine().split("\\|")
+                String id = parts[0] + "p"
+                Integer partition = 0
+
+                partitionMappingServer.addPartition(id, partition)
+                counter++
+
+                if(counter % 10000 == 0) {
+                    System.out.println("Imported: " + counter)
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Exception: " + e);
+            e.printStackTrace();
+        }
+
+        System.out.println("# of keys: " + counter)
+
+
     }
 
     static class PartitionMapping {
@@ -93,7 +114,7 @@ class PartitionLookupImporter {
             pool.initialize();
 
             client = new MemCachedClient(INSTANCE_NAME);
-            client.flushAll();
+            // client.flushAll();
         }
 
         public Integer getPartition(String identifier) {
@@ -105,6 +126,10 @@ class PartitionLookupImporter {
 
         public void setPartition(String identifier, Integer id) {
             client.set(identifier, id)
+        }
+
+        public void addPartition(String identifier, Integer id) {
+            client.add(identifier, id)
         }
     }
 
