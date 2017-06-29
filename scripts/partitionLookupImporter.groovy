@@ -44,6 +44,8 @@ class PartitionLookupImporter {
         Configuration configuration = new PropertiesConfiguration(configurationFile);
 
         String lookupFile = configuration.getString("partition.lookup")
+	String[] servers = configuration.getStringArray("memcached.address")
+        partitionMappingServer = new PartitionMapping(servers)	
 
         try {
             LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile), "UTF-8")
@@ -60,21 +62,20 @@ class PartitionLookupImporter {
                     System.out.println("Imported: " + counter)
                 }
             }
+	    System.out.println("# of keys: " + counter)
         } catch (Exception e) {
             System.out.println("Exception: " + e);
             e.printStackTrace();
         }
 
-        System.out.println("# of keys: " + counter)
-
         String vertexLookupFile = configuration.getString("vertex.lookup")
 
         try {
-            LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile), "UTF-8")
+            LineIterator it = FileUtils.lineIterator(FileUtils.getFile(vertexLookupFile), "UTF-8")
             long counter = 0
             while(it.hasNext()) {
                 String[] parts = it.nextLine().split("\\|")
-                String id = parts[0] + "p"
+                String id = "person:" + parts[0]
                 Integer partition = 0
 
                 partitionMappingServer.addPartition(id, partition)
@@ -84,13 +85,11 @@ class PartitionLookupImporter {
                     System.out.println("Imported: " + counter)
                 }
             }
+	    System.out.println("# of keys: " + counter)
         } catch (Exception e) {
             System.out.println("Exception: " + e);
             e.printStackTrace();
         }
-
-        System.out.println("# of keys: " + counter)
-
 
     }
 
