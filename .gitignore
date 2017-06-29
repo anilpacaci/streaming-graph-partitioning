@@ -1,5 +1,7 @@
 *.class
 *.log
+*.iml
+*.swp
 .classpath
 .project
 target/
