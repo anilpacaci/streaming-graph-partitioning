@@ -1,5 +1,11 @@
 package ca.uwaterloo.cs.sgp.streaming.zhuoran;
 
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.FileBasedConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.ArrayUtils;
@@ -12,14 +18,15 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.lang.*;
 import java.io.FileNotFoundException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class partitionAlgorithms {
     private int size_of_graph;
     private int capacity;
     private int numberOfPartitions;
     private double slack;
-    private double gemma;
-    private int imbalance;
+    private double gamma;
+    private double alpha;
     private int[] partitionSizes;
 
     private long numberOfEdges = 0;
@@ -29,31 +36,26 @@ public class partitionAlgorithms {
 
     LineIterator lineIterator;
     
-    public void setSlack(double input_slack){
-    	slack = input_slack;
-    	double exact_capacity = (this.size_of_graph / this.numberOfPartitions) * (1+slack);
-        capacity = (int) exact_capacity;
+    public void setGamma(double gamma){
+    	this.gamma = gamma;
     }
-    
-    public void setGemma(double input_gemma){
-    	gemma = input_gemma;
-    }
-    
-    public void setImbalance(int input_imbalance){
-    	imbalance = input_imbalance;
+
+    public void setAlpha(double alpha){
+        this.gamma = alpha;
     }
 
     // Constructor of the LDG class, it creates the graph, set up the
     // neighbor relationships for each vertex, calculate the capacity
     // of each partition, and set the size of each partition to 0 by
     // default
-    public partitionAlgorithms(String file, int k, int numberOfVertices){
+    public partitionAlgorithms(String file, int k, int numberOfVertices, Double slack){
         // Read all lines of the file to get the size of graph
         try{
             lineIterator = FileUtils.lineIterator(FileUtils.getFile(file), "UTF-8");
             this.numberOfPartitions = k;
             this.size_of_graph = numberOfVertices;
-            this.capacity = (int) (this.size_of_graph / k) + 1;
+            this.slack = slack;
+            this.capacity = (int) (  ( this.size_of_graph / k ) * (1 + slack) );
 
         }  catch(FileNotFoundException e){
             System.out.println("DataSet file not found.");
@@ -113,7 +115,7 @@ public class partitionAlgorithms {
             // calculate the formulated value for each partition
             double next = (1 - (partitionSizes[i] / capacity)) * numberOfNeighbours[i];
             if(next > result){
-                if(partitionSizes[i] != capacity){
+                if(partitionSizes[i] < capacity){
                     result = next;
                     argmax = i;
                     TieBreaker.clear();
@@ -149,9 +151,9 @@ public class partitionAlgorithms {
             numberOfNeighbours[i] = neighbors_in_partition(i, edgeList);
             // calculate the formulated value for each partition
             double next = numberOfNeighbours[i]
-            		- (gemma * imbalance * Math.pow(partitionSizes[i], imbalance-1));
+            		- (gamma * alpha * Math.pow(partitionSizes[i], gamma - 1));
             if(next > result){
-                if(partitionSizes[i] != capacity){
+                if(partitionSizes[i] < capacity){
                     result = next;
                     argmax = i;
                     TieBreaker.clear();
@@ -240,29 +242,40 @@ public class partitionAlgorithms {
     }
 
     public static void main(String[] args) {
-        String inputFile = args[0];
-        String outputFile = args[1];
-        Integer numberOfPartitions = Integer.parseInt(args[2]);
-        Integer numverOfVertices = Integer.parseInt(args[3]);
-        String algorithm = args[4];
-        String graph_type = args[5];
-        
-        Boolean undirect;
-        if(graph_type.equals("undirect")) undirect = true;
-        else undirect = false;
-        partitionAlgorithms pa = new partitionAlgorithms(inputFile, numberOfPartitions, numverOfVertices);
+        Parameters params = new Parameters();
+        FileBasedConfigurationBuilder<FileBasedConfiguration> builder =
+                new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class)
+                        .configure(params.properties().setFileName(args[0]));
+
+        Configuration config = null;
+
+        try {
+            config = builder.getConfiguration();
+        } catch (ConfigurationException e) {
+            e.printStackTrace();
+        }
+
+        String inputFile = config.getString("sgp.inputfile");
+        String outputFile = config.getString("sgp.outputfile");
+        Integer numberOfPartitions = config.getInt("sgp.partitioncount");
+        Integer numberOfVertices = config.getInt("sgp.vertexcount");
+        Integer numberOfEdges = config.getInt("sgp.vertexcount");
+        String algorithm = config.getString("sgp.algorithm");
+        Boolean undirect = config.getBoolean("sgp.undirected");
+        Double balanceSlack = config.getDouble("sgp.balanceslack");
+
+
+        partitionAlgorithms pa = new partitionAlgorithms(inputFile, numberOfPartitions, numberOfVertices, balanceSlack);
         if(algorithm.equals("ldg")){
-        	Double balanceSlack = Double.parseDouble(args[6]);
-        	pa.setSlack(balanceSlack);
         	pa.streamingPartition(undirect, algorithm);
         }
         else{
-        	Double gemma = Double.parseDouble(args[6]);
-            int imbalance = Integer.parseInt(args[7]);
-        	pa.setGemma(gemma);
-        	pa.setImbalance(imbalance);
+        	Double gamma = config.getDouble("sgp.fennel.gamma");
+        	pa.setGamma(gamma);
+
+        	Double alpha = Math.sqrt(numberOfPartitions) * numberOfEdges / Math.pow(numberOfVertices, 1.5);
+            pa.setAlpha(alpha);
         	pa.streamingPartition(undirect, algorithm);
-        	
         }
 
         pa.print(outputFile);
