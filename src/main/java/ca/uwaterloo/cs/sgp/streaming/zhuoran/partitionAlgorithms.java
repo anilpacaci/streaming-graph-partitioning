@@ -259,7 +259,7 @@ public class partitionAlgorithms {
         String outputFile = config.getString("sgp.outputfile");
         Integer numberOfPartitions = config.getInt("sgp.partitioncount");
         Integer numberOfVertices = config.getInt("sgp.vertexcount");
-        Integer numberOfEdges = config.getInt("sgp.vertexcount");
+        Integer numberOfEdges = config.getInt("sgp.edgecount");
         String algorithm = config.getString("sgp.algorithm");
         Boolean undirect = config.getBoolean("sgp.undirected");
         Double balanceSlack = config.getDouble("sgp.balanceslack");
