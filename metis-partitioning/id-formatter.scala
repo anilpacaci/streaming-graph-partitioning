@@ -55,8 +55,9 @@ object MetisIDFormatter {
         // now we can output in METIS compatible format, eliminatng source id since METIS implicitly assumes line number is a source id
         val metisAdjacency = adjacencyWithIdentifiers.map( l => l._2.mkString(" ")).coalesce(1)
         val header = sc.parallelize(Seq( vertexCount + " " + (edgeCount / 2) )).coalesce(1)
-        val result = header.union(metisAdjacency)
-        result.saveAsTextFile("hdfs://192.168.152.200:9000/datasets/sf10_updates/metis")
+
+        header.saveAsTextFile("hdfs://192.168.152.200:9000/datasets/sf10_updates/metis-header")
+        metisAdjacency.saveAsTextFile("hdfs://192.168.152.200:9000/datasets/sf10_updates/metis")
     }
 
     def generatePartitionLookup(lookupPath: String, partitionPath: String, outputPath: String) {
