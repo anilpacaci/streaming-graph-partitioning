@@ -1,5 +1,6 @@
 package ca.uwaterloo.cs.sgp.streaming.zhuoran;
 
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -13,14 +14,11 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.lang.*;
 import java.io.FileNotFoundException;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class partitionAlgorithms {
+public class EdgeCutSGP {
     private int size_of_graph;
     private int capacity;
     private int numberOfPartitions;
@@ -41,14 +39,14 @@ public class partitionAlgorithms {
     }
 
     public void setAlpha(double alpha){
-        this.gamma = alpha;
+        this.alpha = alpha;
     }
 
     // Constructor of the LDG class, it creates the graph, set up the
     // neighbor relationships for each vertex, calculate the capacity
     // of each partition, and set the size of each partition to 0 by
     // default
-    public partitionAlgorithms(String file, int k, int numberOfVertices, Double slack){
+    public EdgeCutSGP(String file, int k, int numberOfVertices, Double slack){
         // Read all lines of the file to get the size of graph
         try{
             lineIterator = FileUtils.lineIterator(FileUtils.getFile(file), "UTF-8");
@@ -72,8 +70,8 @@ public class partitionAlgorithms {
         vertex_to_partition = new HashMap<>(numberOfVertices);
     }
 
-    String[] LineParser(String[] Edges){
-        String[] result = Arrays.copyOf(Edges, Edges.length);
+    List<String> LineParser(String[] Edges){
+        List<String> result = new ArrayList<>();
         int index = 0;
         for(String next : Edges){
             if( next.isEmpty())
@@ -81,19 +79,18 @@ public class partitionAlgorithms {
 
             String[] temp = next.split(",");
             String composed_id = temp[1];
-            result[index] = composed_id;
+            result.add( composed_id );
             index++;
         }
         return result;
     }
     // Count the number of neighbors of V which are partitioned to
     // partition i
-    int neighbors_in_partition(int i, String[] edgeList){
-        if(edgeList.length == 0) return 0;
+    int neighbors_in_partition(int i, List<String> edgeList){
+        if(edgeList.size() == 0) return 0;
         int count = 0;
         // Iterate through the LinkedList until reach the end
-        for(int j = 0; j < edgeList.length; j++ ){
-            String nextNeighbour = edgeList[j];
+        for(String nextNeighbour : edgeList){
             int next_partition = vertex_to_partition.getOrDefault(nextNeighbour, -1);
             // if the neighbor is partitioned to i-partition already,
             // increment the counter
@@ -104,7 +101,7 @@ public class partitionAlgorithms {
         return count;
     }
     // Choose the partition for next vertex based on the formula in LDG
-    int ldg_partition(String vertexID, String[] edgeList){
+    int ldg_partition(String vertexID, List<String> edgeList){
         double result = -1;
         int argmax = -1;
         int[] numberOfNeighbours = new int[this.numberOfPartitions];
@@ -141,7 +138,7 @@ public class partitionAlgorithms {
         return argmax;
     }
     
-    int fennel_partition(String vertexID, String[] edgeList){
+    int fennel_partition(String vertexID, List<String> edgeList){
     	double result = Integer.MIN_VALUE;
         int argmax = -1;
         int[] numberOfNeighbours = new int[this.numberOfPartitions];
@@ -160,7 +157,7 @@ public class partitionAlgorithms {
                     TieBreaker.add(argmax);
                 }
             }
-            if(next == result){
+            else if (next == result) {
                 TieBreaker.add(i);
             }
         }
@@ -192,15 +189,13 @@ public class partitionAlgorithms {
 
                 // System.out.println(VertexString);
 
-                String[] outgoingEdges = LineParser(outEdges.split("\\s+"));
-                String[] incomingEdges = LineParser(inEdges.split("\\s+"));
-                int inDegree = incomingEdges.length;
-                int outDegree = outgoingEdges.length;
+                List<String> outgoingEdges = LineParser(outEdges.split("\\s+"));
+                List<String> incomingEdges = LineParser(inEdges.split("\\s+"));
 
                 int next_partition;
                 //if the graph is treated as undirected, take incoming edges into account
                 if(undirect ) {
-                    String[] combinedEdges = ArrayUtils.addAll(outgoingEdges, incomingEdges);
+                    List<String> combinedEdges = ListUtils.union(outgoingEdges, incomingEdges);
                     if(algorithm.equals("ldg")){
                     	next_partition = ldg_partition(vertexIdentifier, combinedEdges);
                     }
@@ -265,7 +260,7 @@ public class partitionAlgorithms {
         Double balanceSlack = config.getDouble("sgp.balanceslack");
 
 
-        partitionAlgorithms pa = new partitionAlgorithms(inputFile, numberOfPartitions, numberOfVertices, balanceSlack);
+        EdgeCutSGP pa = new EdgeCutSGP(inputFile, numberOfPartitions, numberOfVertices, balanceSlack);
         if(algorithm.equals("ldg")){
         	pa.streamingPartition(undirect, algorithm);
         }
