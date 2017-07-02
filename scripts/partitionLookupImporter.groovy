@@ -46,7 +46,7 @@ class PartitionLookupImporter {
         Configuration configuration = new PropertiesConfiguration(configurationFile);
 
         String lookupFile = configuration.getString("partition.lookup")
-	    String[] servers = configuration.getStringArray("memcached.address")
+	String[] servers = configuration.getStringArray("memcached.address")
         partitionMappingServer = new PartitionMapping(servers)
         int batchSize = configuration.getInt("batch.size")
 
@@ -85,7 +85,7 @@ class PartitionLookupImporter {
         try {
             
             for(String fileName : nodeFiles) {
-                it = FileUtils.lineIterator(FileUtils.getFile(Paths.get(inputBaseDir, fileName).toFile()), "UTF-8")
+                LineIterator it = FileUtils.lineIterator(FileUtils.getFile(Paths.get(inputBaseDir, fileName).toFile()), "UTF-8")
                 long counter = 0
                 while(it.hasNext()) {
                     String[] parts = it.nextLine().split("\\|")
@@ -99,9 +99,9 @@ class PartitionLookupImporter {
                         System.out.println("Imported: " + counter)
                     }
                 }
-            }
+	    System.out.println(String.format("# of keys in %s : %d", fileName, counter))         
+   	    }
 
-            System.out.println(String.format("# of keys in %s : %d", fileName, counter))
         } catch (Exception e) {
             System.out.println("Exception: " + e);
             e.printStackTrace();
