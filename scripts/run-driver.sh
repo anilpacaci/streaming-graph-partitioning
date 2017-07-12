@@ -9,6 +9,7 @@ locator=$locatorgremlin
 
 # configuration params for benchmark run
 conf_pathsq3=conf/consumer-ldbc-sq3.properties
+conf_pathq11=conf/consumer-ldbc-q11.properties
 conf_path=$conf_pathsq3
 
 # dataset location
