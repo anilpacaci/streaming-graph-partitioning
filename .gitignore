@@ -1,8 +1,11 @@
 *.class
 *.log
+*.iml
+*.swp
 .classpath
 .project
 target/
+.metadata/
 .idea/
 .settings/
 

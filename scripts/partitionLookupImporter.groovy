@@ -26,6 +26,8 @@ import org.apache.commons.io.LineIterator
 import com.whalin.MemCached.MemCachedClient;
 import com.whalin.MemCached.SockIOPool
 
+import java.nio.file.Paths
+
 
 /**
  * This is a Groovy Script to run inside gremlin console, for loading LDBC SNB data into Tinkerpop Competible Graph.
@@ -44,54 +46,66 @@ class PartitionLookupImporter {
         Configuration configuration = new PropertiesConfiguration(configurationFile);
 
         String lookupFile = configuration.getString("partition.lookup")
+	String[] servers = configuration.getStringArray("memcached.address")
+        partitionMappingServer = new PartitionMapping(servers)
+        int batchSize = configuration.getInt("batch.size")
 
         try {
             LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile), "UTF-8")
             long counter = 0
             while(it.hasNext()) {
                 String[] parts = it.nextLine().split(",")
-                String id = parts[0] + "p"
+                String id = parts[0]
                 Integer partition = Integer.valueOf(parts[1])
 
                 partitionMappingServer.setPartition(id, partition)
                 counter++
 
-                if(counter % 10000 == 0) {
+                if(counter % batchSize == 0) {
                     System.out.println("Imported: " + counter)
                 }
             }
+	    System.out.println("# of keys: " + counter)
         } catch (Exception e) {
             System.out.println("Exception: " + e);
             e.printStackTrace();
         }
+    }
 
-        System.out.println("# of keys: " + counter)
+    static void addMissingVertices(String configurationFile) {
+        Configuration configuration = new PropertiesConfiguration(configurationFile);
 
-        String vertexLookupFile = configuration.getString("vertex.lookup")
+        String inputBaseDir = configuration.getString("input.base")
+        String[] nodeFiles = configuration.getStringArray("nodes")
+        String[] servers = configuration.getStringArray("memcached.address")
+        partitionMappingServer = new PartitionMapping(servers)
+
+        int batchSize = configuration.getInt("batch.size")
 
         try {
-            LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile), "UTF-8")
-            long counter = 0
-            while(it.hasNext()) {
-                String[] parts = it.nextLine().split("\\|")
-                String id = parts[0] + "p"
-                Integer partition = 0
+            
+            for(String fileName : nodeFiles) {
+                LineIterator it = FileUtils.lineIterator(FileUtils.getFile(Paths.get(inputBaseDir, fileName).toFile()), "UTF-8")
+                long counter = 0
+                while(it.hasNext()) {
+                    String[] parts = it.nextLine().split("\\|")
+                    String id = "person:" + parts[0]
+                    Integer partition = 0
 
-                partitionMappingServer.addPartition(id, partition)
-                counter++
+                    partitionMappingServer.addPartition(id, partition)
+                    counter++
 
-                if(counter % 10000 == 0) {
-                    System.out.println("Imported: " + counter)
+                    if(counter % batchSize == 0) {
+                        System.out.println("Imported: " + counter)
+                    }
                 }
-            }
+	    System.out.println(String.format("# of keys in %s : %d", fileName, counter))         
+   	    }
+
         } catch (Exception e) {
             System.out.println("Exception: " + e);
             e.printStackTrace();
         }
-
-        System.out.println("# of keys: " + counter)
-
-
     }
 
     static class PartitionMapping {

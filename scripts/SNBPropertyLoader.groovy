@@ -201,11 +201,11 @@ class SNBPropertyLoader {
                                         //propertiesMap.put("iid", identifier);
                                         propertiesMap.put("iid_long", Long.parseLong(colVals[j]))
                                     } else if (colNames[j].equals("birthday")) {
-                                        propertiesMap.put(colNames[j], birthdayDateFormat.parse(colVals[j]).getTime());
+                                       // propertiesMap.put(colNames[j], birthdayDateFormat.parse(colVals[j]).getTime());
                                     } else if (colNames[j].equals("creationDate")) {
-                                        propertiesMap.put(colNames[j], creationDateDateFormat.parse(colVals[j]).getTime());
+                                       // propertiesMap.put(colNames[j], creationDateDateFormat.parse(colVals[j]).getTime());
                                     } else {
-                                        propertiesMap.put(colNames[j], colVals[j]);
+                                       // propertiesMap.put(colNames[j], colVals[j]);
                                     }
                                 }
 
