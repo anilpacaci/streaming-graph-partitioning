@@ -60,20 +60,14 @@ def main(args: Array[String]) {
 
         if(!outgoing_edges.isEmpty) {
             val outgoing_edge_list = outgoing_edges.get
-            for(e  <- outgoing_edge_list) {
-                output.append(edge_to_string(e)).append(" ")
-            }
-            output.deleteCharAt(output.length()-1)     
+            output.append( outgoing_edge_list.map(e => edge_to_string(e)).mkString(" ") ) 
         }
 
         output.append("|")
         
         if(!incoming_edges.isEmpty) {
             val incoming_edge_list = incoming_edges.get
-            for(e <- incoming_edge_list) {
-                output.append(edge_to_string(e)).append(" ")
-            }
-            output.deleteCharAt(output.length()-1)
+            output.append( outgoing_edge_list.map(e => edge_to_string(e)).mkString(" ") )
         }
         
         return output.toString
