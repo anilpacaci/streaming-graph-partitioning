@@ -86,6 +86,7 @@ def main(args: Array[String]) {
     val knows_person = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").option("delimiter", "|").option("nullValue", "").schema(customScheme).load(read_path.toString + "person_knows_person_0_0.csv")
     val knows = knows_person.map(row => ( "person:" + row.getLong(0).toString, Array(new Edge( "person:" + row.getLong(1).toString, "knows", creationDateFormat.parse(row.getString(2)).getTime() )) ) ).rdd
 
+
     val hasInterest_person = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").schema(customScheme).option("delimiter", "|").load(read_path.toString + "person_hasInterest_tag_0_0.csv")
     val hasInterest = hasInterest_person.map(row => ("person:" + row.getLong(0).toString, Array(new Edge("tag:" + row.getLong(1).toString, "hasInterest", 0l)))).rdd
 
@@ -222,3 +223,7 @@ def main(args: Array[String]) {
     sc.stop()
     }
 }
+
+// specific for person_know_person where there are vertices with no incoming / outgoing edges
+// val flattened = joined_edges.fullOuterJoin(person).map(r => (r._1, r._2._1.getOrElse[(Option[Array[Edge]], Option[Array[Edge]])]( ( Some(Array[Edge]()), Some(Array[Edge]()) ) )._1, r._2._1.getOrElse[(Option[Array[Edge]], Option[Array[Edge]])]( ( Some(Array[Edge]()), Some(Array[Edge]()) ) )._2)  )
+// val person = person_csv.map(r => ("person:" + r.getString(0), Array[Edge]() ) ).rdd
