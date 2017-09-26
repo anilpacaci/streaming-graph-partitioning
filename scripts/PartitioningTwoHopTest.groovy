@@ -1,5 +1,8 @@
+// Required to serialize results
+:install com.opencsv opencsv 4.0
+
 import com.opencsv.CSVWriter
-import com.thinkaurelius.titan.core.TitanFactory
+import org.janusgraph.core.JanusGraphFactory
 import org.apache.commons.configuration.Configuration
 import org.apache.commons.configuration.PropertiesConfiguration
 import org.apache.commons.io.FileUtils
@@ -15,7 +18,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Created by apacaci on 2/5/17.
  *
- * Helper Groovy script to run 2-hop friendship query over TitanDb
+ * Helper Groovy script to run 2-hop friendship query over JanusGraph
  * It measures the time to retrieve 2-hop friendship
  */
 class PartitioningTwoHopTest {
@@ -76,7 +79,7 @@ class PartitioningTwoHopTest {
 
     static void run(String graphConfigurationFile, String parametersFile, String outputFile) {
         Configuration graphConfig = new PropertiesConfiguration(graphConfigurationFile)
-        Graph graph = TitanFactory.open(graphConfig)
+        Graph graph = JanusGraphFactory.open(graphConfig)
         run(graph, parametersFile, outputFile)
     }
 
