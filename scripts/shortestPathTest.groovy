@@ -42,10 +42,11 @@ class PartitioningTwoHopTest {
 
         while(it.hasNext()) {
             // we know that query_1_param.txt has iid as first parameter
-            String iid = it.nextLine().split('\\|')[0]
-	    String targetId = it.nextLine().split('\\|')[1]
+	    String current_line = it.nextLine()
+            String iid = current_line.split('\\|')[0]
+	    String targetId = current_line.split('\\|')[1]
 
-            DefaultTraversalMetrics metrics = g.V().has('iid', 'person:' + iid).repeat(out('knows').simplePath()).until(has('iid', 'person:'+targetId).or().loops().is(5)).limit(1).path().count(local)
+            DefaultTraversalMetrics metrics = g.V().has('iid', 'person:' + iid).repeat(out('knows').simplePath()).until(has('iid', 'person:'+targetId).or().loops().is(5)).limit(1).path().count(local).profile().next()
             Long vertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
             Long partitionId = getPartitionId(vertexId)
 
