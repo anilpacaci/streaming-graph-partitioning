@@ -42,23 +42,31 @@ class PartitioningTwoHopTest {
 
         while(it.hasNext()) {
             // we know that query_1_param.txt has iid as first parameter
-	    String current_line = it.nextLine()
+	        String current_line = it.nextLine()
             String iid = current_line.split('\\|')[0]
-	    String targetId = current_line.split('\\|')[1]
-
-            DefaultTraversalMetrics metrics = g.V().has('iid', 'person:' + iid).repeat(out('knows').simplePath()).until(has('iid', 'person:'+targetId).or().loops().is(5)).limit(1).path().count(local).profile().next()
-            Long vertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
-            Long partitionId = getPartitionId(vertexId)
-
-            long totalQueryDurationInMicroSeconds = metrics.getDuration(TimeUnit.MICROSECONDS)
-            // index 2 corresponds to valueMap step, where properties of each neighbour is actually retrieved from backend
-
+	        String targetId = current_line.split('\\|')[1]
             List<String> queryRecord = new ArrayList();
-            queryRecord.add(iid)
-            queryRecord.add(partitionId)
-	    queryRecord.add(targetId)
-            queryRecord.add(totalQueryDurationInMicroSeconds.toString())
 
+            try {
+                DefaultTraversalMetrics metrics = g.V().has('iid', 'person:' + iid).repeat(out('knows').simplePath()).until(has('iid', 'person:' + targetId).or().loops().is(5)).limit(1).path().count(local).profile().next()
+                Long vertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
+                Long partitionId = getPartitionId(vertexId)
+
+                long totalQueryDurationInMicroSeconds = metrics.getDuration(TimeUnit.MICROSECONDS)
+                // index 2 corresponds to valueMap step, where properties of each neighbour is actually retrieved from backend
+
+                queryRecord.add(iid)
+                queryRecord.add(partitionId)
+                queryRecord.add(targetId)
+                queryRecord.add(totalQueryDurationInMicroSeconds.toString())
+            } catch(Exception e) {
+                // means that query failed, we still add corresponding entry to the csv
+                queryRecord.add(iid)
+                queryRecord.add(e.getMessage())
+                queryRecord.add("NA")
+                queryRecord.add("NA")
+                log.warn("Query for vertex: " + iid + " could not be executed: " + e.getMessage())
+            }
             // add record to CSV
             csvPrinter.writeNext(queryRecord.toArray(new String[0]))
 
