@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
  */
 class PartitioningTwoHopTest {
 
-    private static String[] CSV_HEADERS = ["IID", "VERTEX_PARTITION", "TARGET_ID", "TOTAL_DURATION" ]
+    private static String[] CSV_HEADERS = ["IID", "TARGET_ID", "TOTAL_DURATION" ]
 
     static void run(Graph graph, String parametersFile, String outputFile) {
 
@@ -49,21 +49,20 @@ class PartitioningTwoHopTest {
 
             try {
                 DefaultTraversalMetrics metrics = g.V().has('iid', 'person:' + iid).repeat(out('knows').simplePath()).until(has('iid', 'person:' + targetId).or().loops().is(5)).limit(1).path().count(local).profile().next()
-                Long vertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
-                Long partitionId = getPartitionId(vertexId)
 
                 long totalQueryDurationInMicroSeconds = metrics.getDuration(TimeUnit.MICROSECONDS)
                 // index 2 corresponds to valueMap step, where properties of each neighbour is actually retrieved from backend
 
                 queryRecord.add(iid)
-                queryRecord.add(partitionId)
                 queryRecord.add(targetId)
                 queryRecord.add(totalQueryDurationInMicroSeconds.toString())
+
+                log.info("Query for vertex: " + iid + " - " + targetId + " pair succesfully executed ")
+
             } catch(Exception e) {
                 // means that query failed, we still add corresponding entry to the csv
                 queryRecord.add(iid)
                 queryRecord.add(e.getMessage())
-                queryRecord.add("NA")
                 queryRecord.add("NA")
                 log.warn("Query for vertex: " + iid + " could not be executed: " + e.getMessage())
             }
