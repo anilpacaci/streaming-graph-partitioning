@@ -32,6 +32,77 @@ import java.util.concurrent.TimeUnit
  * Helper Groovy script to run 2-hop friendship query over JanusGraph
  * It measures the time to retrieve 2-hop friendship
  */
+
+public class CassandraLocalReadCounter {
+
+        String cassandraJMXPort;
+        int numberOfInstances;
+
+        List<MBeanServerConnection> serverConnections;
+
+        Integer[] lastReads;
+
+        ObjectName readCountAttribute;
+
+        public CassandraLocalReadCounter(String configurationFile) {
+            Configuration configuration = new PropertiesConfiguration(configurationFile);
+
+            String[] ipAddresses = configuration.getStringArray("cassandra.host");
+            cassandraJMXPort = configuration.getString("cassandra.jmx");
+            numberOfInstances = configuration.getInt("cassandra.clustersize");
+
+            serverConnections = new ArrayList<>(numberOfInstances);
+            lastReads = new Integer[numberOfInstances];
+
+            for(String ipAddress : ipAddresses) {
+                JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + ipAddress + ":" + cassandraJMXPort + "/jmxrmi")
+                JMXConnector jmxc = JMXConnectorFactory.connect(url, null)
+
+                MBeanServerConnection mbsc = jmxc.getMBeanServerConnection();
+                serverConnections.add(mbsc);
+            }
+
+            readCount = new ObjectName("org.apache.cassandra.metrics:type=Keyspace,keyspace=janusgraph,name=ReadLatency");
+
+            for(int i = 0 ; i < numberOfInstances ; i++) {
+                int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
+                lastReads[i] = readCount;
+            }
+        }
+
+        /**
+         * Iterate over all nodes in the cluster and retrieve local counts since restart
+         * @return
+         */
+        public List<Integer> getTotalReadCount() {
+            List<Integer> reads = new ArrayList();
+
+            for(int i = 0 ; i < numberOfInstances ; i++) {
+                int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
+                reads.add(readCount);
+                lastReads[i] = readCount;
+            }
+        }
+
+        /**
+         * Iterate over all nodes in cluster and retrieve local counts in incremental manner
+         * Every call to this function updates local data structures and returns read counts since last call
+         * @return
+         */
+        public List<Integer> updateReadCount() {
+            List<Integer> reads = new ArrayList();
+
+            for(int i = 0 ; i < numberOfInstances ; i++) {
+                int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
+                reads.add(readCount - lastReads[i]);
+                lastReads[i] = readCount;
+            }
+            return reads;
+        }
+
+    }
+
+
 class PartitioningTwoHopTest {
 
     private static String[] CSV_HEADERS = ["IID", "VERTEX_PARTITION", "1HOP", "2HOP", "NEIGHBOURHOOD_RETRIEVAL_DURATION",
@@ -124,72 +195,4 @@ class PartitioningTwoHopTest {
     }
 
 }
-    public class CassandraLocalReadCounter {
-
-        String cassandraJMXPort;
-        int numberOfInstances;
-
-        List<MBeanServerConnection> serverConnections;
-
-        Integer[] lastReads;
-
-        ObjectName readCountAttribute;
-
-        public CassandraLocalReadCounter(String configurationFile) {
-            Configuration configuration = new PropertiesConfiguration(configurationFile);
-
-            String[] ipAddresses = configuration.getStringArray("cassandra.host");
-            cassandraJMXPort = configuration.getString("cassandra.jmx");
-            numberOfInstances = configuration.getInt("cassandra.clustersize");
-
-            serverConnections = new ArrayList<>(numberOfInstances);
-            lastReads = new Integer[numberOfInstances];
-
-            for(String ipAddress : ipAddresses) {
-                JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + ipAddress + ":" + cassandraJMXPort + "/jmxrmi")
-                JMXConnector jmxc = JMXConnectorFactory.connect(url, null)
-
-                MBeanServerConnection mbsc = jmxc.getMBeanServerConnection();
-                serverConnections.add(mbsc);
-            }
-
-            readCount = new ObjectName("org.apache.cassandra.metrics:type=Keyspace,keyspace=janusgraph,name=ReadLatency");
-
-            for(int i = 0 ; i < numberOfInstances ; i++) {
-                int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
-                lastReads[i] = readCount;
-            }
-        }
-
-        /**
-         * Iterate over all nodes in the cluster and retrieve local counts since restart
-         * @return
-         */
-        public List<Integer> getTotalReadCount() {
-            List<Integer> reads = new ArrayList();
-
-            for(int i = 0 ; i < numberOfInstances ; i++) {
-                int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
-                reads.add(readCount);
-                lastReads[i] = readCount;
-            }
-        }
-
-        /**
-         * Iterate over all nodes in cluster and retrieve local counts in incremental manner
-         * Every call to this function updates local data structures and returns read counts since last call
-         * @return
-         */
-        public List<Integer> updateReadCount() {
-            List<Integer> reads = new ArrayList();
-
-            for(int i = 0 ; i < numberOfInstances ; i++) {
-                int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
-                reads.add(readCount - lastReads[i]);
-                lastReads[i] = readCount;
-            }
-            return reads;
-        }
-
-    }
 
