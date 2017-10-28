@@ -26,8 +26,6 @@ import javax.management.remote.JMXServiceURL;
 
 import java.util.concurrent.TimeUnit
 
-import CassandraLocalReadCounter
-
 /**
  * Created by apacaci on 2/5/17.
  *
@@ -116,7 +114,7 @@ class PartitioningTwoHopTest {
     static void run(String graphConfigurationFile, String parametersFile, String outputFile, String jmxConfigurationFile) {
         Configuration graphConfig = new PropertiesConfiguration(graphConfigurationFile)
         Graph graph = JanusGraphFactory.open(graphConfig)
-        CassandraLocalReadCounter  readCounter = CassandraLocalReadCounter(jmxConfigurationFile)
+        CassandraLocalReadCounter  readCounter = new CassandraLocalReadCounter(jmxConfigurationFile)
         run(graph, parametersFile, outputFile, readCounter)
     }
 
@@ -125,6 +123,7 @@ class PartitioningTwoHopTest {
         return ( id >>> 3 ) & 3
     }
 
+}
     public class CassandraLocalReadCounter {
 
         String cassandraJMXPort;
@@ -143,8 +142,6 @@ class PartitioningTwoHopTest {
             cassandraJMXPort = configuration.getString("cassandra.jmx");
             numberOfInstances = configuration.getInt("cassandra.clustersize");
 
-            urls = new ArrayList<>(numberOfInstances);
-            jmxConnectors = new ArrayList<>(numberOfInstances);
             serverConnections = new ArrayList<>(numberOfInstances);
             lastReads = new Integer[numberOfInstances];
 
@@ -196,4 +193,3 @@ class PartitioningTwoHopTest {
 
     }
 
-}
