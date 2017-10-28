@@ -15,6 +15,8 @@ import org.apache.tinkerpop.gremlin.structure.Graph
 
 import java.util.concurrent.TimeUnit
 
+import CassandraLocalReadCounter
+
 /**
  * Created by apacaci on 2/5/17.
  *
@@ -23,9 +25,27 @@ import java.util.concurrent.TimeUnit
  */
 class PartitioningTwoHopTest {
 
-    private static String[] CSV_HEADERS = ["IID", "VERTEX_PARTITION", "1HOP", "2HOP", "NEIGHBOURHOOD_RETRIEVAL_DURATION", "PROPERTIES_RETRIEVAL_DURATION", "TOTAL_DURATION" ]
+    private static String[] CSV_HEADERS = ["IID", "VERTEX_PARTITION", "1HOP", "2HOP", "NEIGHBOURHOOD_RETRIEVAL_DURATION",
+                                           "PROPERTIES_RETRIEVAL_DURATION", "TOTAL_DURATION",
+                                           "READS_C1",
+                                           "READS_C2",
+                                           "READS_C3",
+                                           "READS_C4",
+                                           "READS_C5",
+                                           "READS_C6",
+                                           "READS_C7",
+                                           "READS_C8",
+                                           "READS_C9",
+                                           "READS_C10",
+                                           "READS_C11",
+                                           "READS_C12",
+                                           "READS_C13",
+                                           "READS_C14",
+                                           "READS_C15",
+                                           "READS_C16"
+    ]
 
-    static void run(Graph graph, String parametersFile, String outputFile) {
+    static void run(Graph graph, String parametersFile, String outputFile, CassandraLocalReadCounter readCounter) {
 
         GraphTraversalSource g = graph.traversal()
 
@@ -66,6 +86,11 @@ class PartitioningTwoHopTest {
             queryRecord.add(propertiesRetrievalInMicroSeconds.toString())
             queryRecord.add(totalQueryDurationInMicroSeconds.toString())
 
+            List<Integer> readCounts = readCounter.updateReadCount()
+            for(int i = 0 ; i < readCounts.size() ; i++) {
+                queryRecord.add(readCounts.get(i).toString())
+            }
+
             // add record to CSV
             csvPrinter.writeNext(queryRecord.toArray(new String[0]))
 
@@ -77,10 +102,11 @@ class PartitioningTwoHopTest {
         csvPrinter.close()
     }
 
-    static void run(String graphConfigurationFile, String parametersFile, String outputFile) {
+    static void run(String graphConfigurationFile, String parametersFile, String outputFile, String jmxConfigurationFile) {
         Configuration graphConfig = new PropertiesConfiguration(graphConfigurationFile)
         Graph graph = JanusGraphFactory.open(graphConfig)
-        run(graph, parametersFile, outputFile)
+        CassandraLocalReadCounter  readCounter = CassandraLocalReadCounter(jmxConfigurationFile)
+        run(graph, parametersFile, outputFile, readCounter)
     }
 
     static Long getPartitionId(Long id) {
