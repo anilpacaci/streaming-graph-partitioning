@@ -1,0 +1,44 @@
+{
+  "unit" : "MILLISECONDS",
+  "throughput" : 229.44936482891268,
+  "all_metrics" : [ {
+    "name" : "LdbcQuery11",
+    "count" : 10500,
+    "unit" : "MILLISECONDS",
+    "run_time" : {
+      "name" : "Runtime",
+      "unit" : "MILLISECONDS",
+      "count" : 10500,
+      "mean" : 122.57990476190476,
+      "min" : 17,
+      "max" : 6582,
+      "50th_percentile" : 28,
+      "90th_percentile" : 94,
+      "95th_percentile" : 160,
+      "99th_percentile" : 6288
+    }
+  }, {
+    "name" : "LdbcShortQuery3PersonFriends",
+    "count" : 89112,
+    "unit" : "MILLISECONDS",
+    "run_time" : {
+      "name" : "Runtime",
+      "unit" : "MILLISECONDS",
+      "count" : 89112,
+      "mean" : 590.020221743424,
+      "min" : 4,
+      "max" : 7470,
+      "50th_percentile" : 367,
+      "90th_percentile" : 1070,
+      "95th_percentile" : 2245,
+      "99th_percentile" : 3979
+    }
+  } ],
+  "format_version" : 3,
+  "start_time" : 1506476898499,
+  "latest_finish_time" : 1506477332634,
+  "total_duration" : 434135,
+  "total_count" : 99612,
+  "update_count" : 0,
+  "update_throughput" : 0.0
+}

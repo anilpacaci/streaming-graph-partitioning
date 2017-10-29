@@ -61,13 +61,18 @@ public class CassandraLocalReadCounter {
                 MBeanServerConnection mbsc = jmxc.getMBeanServerConnection();
                 serverConnections.add(mbsc);
             }
+	
+	    log.info("All JMX connections initialized")
 
-            readCount = new ObjectName("org.apache.cassandra.metrics:type=Keyspace,keyspace=janusgraph,name=ReadLatency");
+            readCountAttribute = new ObjectName("org.apache.cassandra.metrics:type=Keyspace,keyspace=janusgraph,name=ReadLatency");
 
             for(int i = 0 ; i < numberOfInstances ; i++) {
+		MBeanServerConnection mbsc = serverConnections.get(i)
                 int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
                 lastReads[i] = readCount;
             }
+	
+	    log.info("Initial read counts are retrieved")
         }
 
         /**
@@ -78,6 +83,7 @@ public class CassandraLocalReadCounter {
             List<Integer> reads = new ArrayList();
 
             for(int i = 0 ; i < numberOfInstances ; i++) {
+		MBeanServerConnection mbsc = serverConnections.get(i)
                 int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
                 reads.add(readCount);
                 lastReads[i] = readCount;
@@ -93,6 +99,7 @@ public class CassandraLocalReadCounter {
             List<Integer> reads = new ArrayList();
 
             for(int i = 0 ; i < numberOfInstances ; i++) {
+		MBeanServerConnection mbsc = serverConnections.get(i)
                 int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
                 reads.add(readCount - lastReads[i]);
                 lastReads[i] = readCount;
@@ -125,7 +132,7 @@ class PartitioningTwoHopTest {
                                            "READS_C16"
     ]
 
-    static void run(Graph graph, String parametersFile, String outputFile, CassandraLocalReadCounter readCounter) {
+    static void start(Graph graph, String parametersFile, String outputFile, CassandraLocalReadCounter readCounter) {
 
         GraphTraversalSource g = graph.traversal()
 
@@ -143,10 +150,14 @@ class PartitioningTwoHopTest {
         while(it.hasNext()) {
             // we know that query_1_param.txt has iid as first parameter
             String iid = it.nextLine().split('\\|')[0]
+	    
+	    log.info("New vertex id: " + iid)
 
             DefaultTraversalMetrics metrics = g.V().has('iid', 'person:' + iid).out('knows').out('knows').properties().profile().next()
             Long vertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
             Long partitionId = getPartitionId(vertexId)
+
+	    log.info("Vertex: " + iid + " succesfully queried")
 
             long totalQueryDurationInMicroSeconds = metrics.getDuration(TimeUnit.MICROSECONDS)
             // index 2 corresponds to valueMap step, where properties of each neighbour is actually retrieved from backend
@@ -171,6 +182,7 @@ class PartitioningTwoHopTest {
                 queryRecord.add(readCounts.get(i).toString())
             }
 
+	    log.info("Retrieved cassandra stats for query with vertex: " + iid)
             // add record to CSV
             csvPrinter.writeNext(queryRecord.toArray(new String[0]))
 
@@ -183,10 +195,12 @@ class PartitioningTwoHopTest {
     }
 
     static void run(String graphConfigurationFile, String parametersFile, String outputFile, String jmxConfigurationFile) {
-        Configuration graphConfig = new PropertiesConfiguration(graphConfigurationFile)
+        log.info("Opening the graph file")
+	Configuration graphConfig = new PropertiesConfiguration(graphConfigurationFile)
         Graph graph = JanusGraphFactory.open(graphConfig)
-        CassandraLocalReadCounter  readCounter = new CassandraLocalReadCounter(jmxConfigurationFile)
-        run(graph, parametersFile, outputFile, readCounter)
+        log.info("JanusGraph Opened")
+	CassandraLocalReadCounter  readCounter = new CassandraLocalReadCounter(jmxConfigurationFile)
+        start(graph, parametersFile, outputFile, readCounter)
     }
 
     static Long getPartitionId(Long id) {
