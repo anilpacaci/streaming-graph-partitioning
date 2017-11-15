@@ -183,8 +183,8 @@ class ShortestPathTest {
                 totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
 
 	    	// get first hop neighbor of source and target
-            	sourceNext = g.V(sourceCurrent).out('knows').id().fold().next()
-	    	targetNext = g.V(targetCurrent).out('knows').id().fold().next()
+            	sourceNext.addAll(g.V(sourceCurrent).out('knows').id().fold().next())
+	    	targetNext.addAll(g.V(targetCurrent).out('knows').id().fold().next())
 	    
 	    	// check for intersection
 	    	for(long id: sourceNext){
@@ -193,15 +193,16 @@ class ShortestPathTest {
 				break;
 			}
 	    	}
+
 		if(pathDetected) break;
 	        count++;
 		// update lists
-		sourceCurrent = new ArrayList();
+		sourceCurrent.removeAll();
 		sourceCurrent.addAll(sourceNext);
-		targetCurrent = new ArrayList();
+		targetCurrent.removeAll();
 		targetCurrent.addAll(targetNext);
-		sourceNext = new ArrayList();
-		targetNext = new ArrayList();
+		sourceNext.removeAll();
+		targetNext.removeAll();
 	    }
 	    
 	    
