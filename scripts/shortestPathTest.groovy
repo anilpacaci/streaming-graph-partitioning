@@ -24,7 +24,7 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
 
-
+import java.util.ArrayList
 import java.util.concurrent.TimeUnit
 
 /**
@@ -117,8 +117,7 @@ public class CassandraLocalReadCounter {
 
 class ShortestPathTest {
 
-    private static String[] CSV_HEADERS = ["IID", "TARGET_ID", "VERTEX_PARTITION", "1HOP", "2HOP", "NEIGHBOURHOOD_RETRIEVAL_DURATION",
-                                           "PROPERTIES_RETRIEVAL_DURATION", "TOTAL_DURATION",
+    private static String[] CSV_HEADERS = ["IID", "TARGET_ID", "VERTEX_PARTITION", "TOTAL_DURATION",
                                            "READS_C1",
                                            "READS_C2",
                                            "READS_C3",
@@ -158,33 +157,95 @@ class ShortestPathTest {
             String iid = current_line.split('\\|')[0]
 	    String targetId = current_line.split('\\|')[1]
 
+	    Long vertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
+	    Long partitionId = getPartitionId(vertexId)	
+
 	    log.info("New vertex id: " + iid)
 
-            DefaultTraversalMetrics metrics = g.V().has('iid', 'person:' + iid).repeat(out('knows').simplePath()).until(has('iid', 'person:'+targetId).or().loops().is(5)).limit(1).path().count(local).profile().next()
-            Long vertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
-            Long partitionId = getPartitionId(vertexId)
+	    boolean pathDetected = false;
+	    long totalQueryDurationInMicroSeconds = 0;
 
-	    log.info("Vertex: " + iid + " succesfully queried")
 
-	    long totalQueryDurationInMicroSeconds = metrics.getDuration(TimeUnit.MICROSECONDS)
-            // index 2 corresponds to valueMap step, where properties of each neighbour is actually retrieved from backend
-            long neighbourhoodRetrievalInMicroSeconds = metrics.getMetrics(2).getDuration(TimeUnit.MICROSECONDS)
-            long propertiesRetrievalInMicroSeconds = metrics.getMetrics(3).getDuration(TimeUnit.MICROSECONDS)
+	    // get first hop neighbor of source and target
+            ArrayList<Long> firstHopSource = g.V().has('iid', 'person:' + iid).out('knows').id().fold().next()
+	    ArrayList<Long> firstHopTarget = g.V().has('iid', 'person:' + targetId).out('knows').id().fold().next()
+	    DefaultTraversalMetrics metrics =  g.V().has('iid', 'person:' + iid).out('knows').properties().profile().next()
+	    totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
+	    metrics = g.V().has('iid', 'person:' + targetId).out('knows').properties().profile().next()
+	    totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
+	    
+	    // check for intersection
+	    for(long id: firstHopSource){
+		if(firstHopTarget.contains(id)){
+			pathDetected = true;
+			break;
+		}
+	    }
+	    
+	    // if path not detected
+	     ArrayList<Long> secondHopSource = null;
+             ArrayList<Long> secondHopTarget = null;
 
-            // index 1 corresponds to out step
-            int oneHopCount = metrics.getMetrics(1).getCount('elementCount')
-            int twoHopCount = metrics.getMetrics(2).getCount('elementCount')
+	    if(!pathDetected){
 
-            // index 2 corresponds to valueMap step, where properties of each neighbour is actually retrieved from backend
+		// get all second-hop neighbor
+		secondHopSource =  g.V(firstHopSource).out('knows').id().fold().next()
+		metrics = g.V(firstHopSource).out('knows').properties().profile().next()
+            	totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
 
+		secondHopSource =  g.V(firstHopTarget).out('knows').id().fold().next()
+                metrics = g.V(firstHopTarget).out('knows').properties().profile().next()
+                totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
+
+		// check for common vertices
+		for(long id: secondHopSource){
+                	if(secondHopTarget.contains(id)){
+                        	pathDetected = true;
+                        	break;
+               		}
+            	}
+
+	    }
+
+	    // if path not detected
+	    ArrayList<Long> thirdHopSource = null;
+            ArrayList<Long> thirdHopTarget = null;
+            if(!pathDetected){
+
+                // get all second-hop neighbors
+                thirdHopSource =  g.V(secondHopSource).out('knows').id().fold().next()
+                metrics = g.V(secondHopSource).out('knows').properties().profile().next()
+                totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
+
+                thirdHopSource =  g.V(secondHopTarget).out('knows').id().fold().next()
+                metrics = g.V(secondHopTarget).out('knows').properties().profile().next()
+                totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
+
+                // check for common vertices
+                for(long id: thirdHopSource){
+                        if(thirdHopTarget.contains(id)){
+                                pathDetected = true;
+                                break;
+                        }
+                }
+
+            }
+
+	    // if we still cannot detect the path, we may discard the pair
+	    if(!pathDetected){
+		continue;
+	    }
+		
+
+	    // otherwise, proceed writing records
             List<String> queryRecord = new ArrayList();
             queryRecord.add(iid)
 	    queryRecord.add(targetId)
             queryRecord.add(partitionId)
-	    queryRecord.add(oneHopCount.toString())
-     	    queryRecord.add(twoHopCount.toString())
-            queryRecord.add(neighbourhoodRetrievalInMicroSeconds.toString())
-            queryRecord.add(propertiesRetrievalInMicroSeconds.toString())
+	    //queryRecord.add(oneHopCount.toString())
+     	    //queryRecord.add(twoHopCount.toString())
+            //queryRecord.add(neighbourhoodRetrievalInMicroSeconds.toString())
+            //queryRecord.add(propertiesRetrievalInMicroSeconds.toString())
             queryRecord.add(totalQueryDurationInMicroSeconds.toString())
 
 	    List<Integer> readCounts = readCounter.updateReadCount()
