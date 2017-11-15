@@ -1,4 +1,4 @@
-// Required to serialize results
+// Required to serialize resultsl
 :install com.opencsv opencsv 4.0
 
 import com.opencsv.CSVWriter
@@ -195,6 +195,13 @@ class ShortestPathTest {
 	    	}
 		if(pathDetected) break;
 	        count++;
+		// update lists
+		sourceCurrent = new ArrayList();
+		sourceCurrent.addAll(sourceNext);
+		targetCurrent = new ArrayList();
+		targetCurrent.addAll(targetNext);
+		sourceNext = new ArrayList();
+		targetNext = new ArrayList();
 	    }
 	    
 	    
