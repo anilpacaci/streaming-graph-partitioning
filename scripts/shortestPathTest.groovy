@@ -136,7 +136,7 @@ class ShortestPathTest {
                                            "READS_C16"
     ]
 
-    static void start(Graph graph, String parametersFile, String outputFile, CassandraLocalReadCounter readCounter){
+    static void start(Graph graph, String parametersFile, String outputFile, CassandraLocalReadCounter readCounter, int depth){
 
         GraphTraversalSource g = graph.traversal()
 
@@ -157,79 +157,48 @@ class ShortestPathTest {
             String iid = current_line.split('\\|')[0]
 	    String targetId = current_line.split('\\|')[1]
 
-	    Long vertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
-	    Long partitionId = getPartitionId(vertexId)	
+	    Long sourceVertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
+	    Long targetVertexId = (Long) g.V().has('iid', 'person:' + targetId).next().id()
+	    Long partitionId = getPartitionId(sourceVertexId)	
 
 	    log.info("New vertex id: " + iid)
 
 	    boolean pathDetected = false;
 	    long totalQueryDurationInMicroSeconds = 0;
 
+	    ArrayList<Long> sourceCurrent = new ArrayList()
+	    ArrayList<Long> sourceNext = new ArrayList()
+	    ArrayList<Long> targetCurrent = new ArrayList()
+	    ArrayList<Long> targetNext = new ArrayList()
 
-	    // get first hop neighbor of source and target
-            ArrayList<Long> firstHopSource = g.V().has('iid', 'person:' + iid).out('knows').id().fold().next()
-	    ArrayList<Long> firstHopTarget = g.V().has('iid', 'person:' + targetId).out('knows').id().fold().next()
-	    DefaultTraversalMetrics metrics =  g.V().has('iid', 'person:' + iid).out('knows').properties().profile().next()
-	    totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
-	    metrics = g.V().has('iid', 'person:' + targetId).out('knows').properties().profile().next()
-	    totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
+	    sourceCurrent.add(sourceVertexId)
+	    targetCurrent.add(targetVertexId)
+
+	    int count = 0;
+	    while(count < depth){
+		 /// metrics calculation
+                DefaultTraversalMetrics metrics =  g.V(sourceCurrent).out('knows').properties().profile().next()
+                totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
+                metrics = g.V(targetCurrent).out('knows').properties().profile().next()
+                totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
+
+	    	// get first hop neighbor of source and target
+            	sourceNext = g.V(sourceCurrent).out('knows').id().fold().next()
+	    	targetNext = g.V(targetCurrent).out('knows').id().fold().next()
 	    
-	    // check for intersection
-	    for(long id: firstHopSource){
-		if(firstHopTarget.contains(id)){
-			pathDetected = true;
-			break;
-		}
+	    	// check for intersection
+	    	for(long id: sourceNext){
+			if(targetNext.contains(id)){
+				pathDetected = true;
+				break;
+			}
+	    	}
+		if(pathDetected) break;
+	        count++;
 	    }
 	    
-	    // if path not detected
-	     ArrayList<Long> secondHopSource = null;
-             ArrayList<Long> secondHopTarget = null;
-
-	    if(!pathDetected){
-
-		// get all second-hop neighbor
-		secondHopSource =  g.V(firstHopSource).out('knows').id().fold().next()
-		metrics = g.V(firstHopSource).out('knows').properties().profile().next()
-            	totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
-
-		secondHopSource =  g.V(firstHopTarget).out('knows').id().fold().next()
-                metrics = g.V(firstHopTarget).out('knows').properties().profile().next()
-                totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
-
-		// check for common vertices
-		for(long id: secondHopSource){
-                	if(secondHopTarget.contains(id)){
-                        	pathDetected = true;
-                        	break;
-               		}
-            	}
-
-	    }
-
-	    // if path not detected
-	    ArrayList<Long> thirdHopSource = null;
-            ArrayList<Long> thirdHopTarget = null;
-            if(!pathDetected){
-
-                // get all second-hop neighbors
-                thirdHopSource =  g.V(secondHopSource).out('knows').id().fold().next()
-                metrics = g.V(secondHopSource).out('knows').properties().profile().next()
-                totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
-
-                thirdHopSource =  g.V(secondHopTarget).out('knows').id().fold().next()
-                metrics = g.V(secondHopTarget).out('knows').properties().profile().next()
-                totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
-
-                // check for common vertices
-                for(long id: thirdHopSource){
-                        if(thirdHopTarget.contains(id)){
-                                pathDetected = true;
-                                break;
-                        }
-                }
-
-            }
+	    
+    
 
 	    // if we still cannot detect the path, we may discard the pair
 	    if(!pathDetected){
@@ -266,13 +235,13 @@ class ShortestPathTest {
         csvPrinter.close()
     }
 
-    static void run(String graphConfigurationFile, String parametersFile, String outputFile, String jmxConfigurationFile) {
+    static void run(String graphConfigurationFile, String parametersFile, String outputFile, String jmxConfigurationFile, int depth) {
 	log.info("Opening the graph file")
         Configuration graphConfig = new PropertiesConfiguration(graphConfigurationFile)
         Graph graph = JanusGraphFactory.open(graphConfig)
 	log.info("JanusGraph Opened")
 	CassandraLocalReadCounter readCounter = new CassandraLocalReadCounter(jmxConfigurationFile)
-        start(graph, parametersFile, outputFile, readCounter)
+        start(graph, parametersFile, outputFile, readCounter, depth)
     }
 
     static Long getPartitionId(Long id) {
