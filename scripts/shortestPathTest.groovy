@@ -175,6 +175,8 @@ class ShortestPathTest {
 	    targetCurrent.add(targetVertexId)
 
 	    int count = 0;
+
+	    System.out.println("Entering loop with current depth: " + count)
 	    while(count < depth){
 		 /// metrics calculation
                 DefaultTraversalMetrics metrics =  g.V(sourceCurrent).out('knows').properties().profile().next()
@@ -183,16 +185,26 @@ class ShortestPathTest {
                 totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
 
 	    	// get first hop neighbor of source and target
+
+		System.out.println("Getting vertex ids in next layer")
             	sourceNext.addAll(g.V(sourceCurrent).out('knows').id().fold().next())
 	    	targetNext.addAll(g.V(targetCurrent).out('knows').id().fold().next())
+
+		System.out.println("Done in getting ids")
+		System.out.println("sourceNext with size: " + sourceNext.size() + " " + "targetNext with size: " + targetNext.size())
 	    
 	    	// check for intersection
+		System.out.println("Checking id from sourceNext in targetNext....")
 	    	for(long id: sourceNext){
+			System.out.println("Checking id: " + id)
 			if(targetNext.contains(id)){
+				System.out.println("id: " + id + "  in targetNext")
 				pathDetected = true;
 				break;
 			}
+			System.out.println("id: " + id + "  in targetNext")
 	    	}
+		System.out.println("Finished checking all ids in sourceNext")
 
 		if(pathDetected) break;
 	        count++;
@@ -203,6 +215,7 @@ class ShortestPathTest {
 		targetCurrent.addAll(targetNext);
 		sourceNext.removeAll();
 		targetNext.removeAll();
+		System.out.println("Cleared current buffer. Now sizeof sourceNext: " + sourceNext.size() + " sizeof targetNext: " + targetNext.size())
 	    }
 	    
 	    
