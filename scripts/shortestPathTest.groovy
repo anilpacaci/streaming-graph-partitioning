@@ -117,7 +117,7 @@ public class CassandraLocalReadCounter {
 
 class ShortestPathTest {
 
-    private static String[] CSV_HEADERS = ["IID", "TARGET_ID", "VERTEX_PARTITION", "TOTAL_DURATION",
+    private static String[] CSV_HEADERS = ["IID", "TARGET_ID", "TOTAL_DURATION",
                                            "READS_C1",
                                            "READS_C2",
                                            "READS_C3",
@@ -198,11 +198,11 @@ class ShortestPathTest {
 	    	for(long id: sourceNext){
 			System.out.println("Checking id: " + id)
 			if(targetNext.contains(id)){
-				System.out.println("id: " + id + "  in targetNext")
+				System.out.println("!!! id: " + id + "  in targetNext")
 				pathDetected = true;
 				break;
 			}
-			System.out.println("id: " + id + "  in targetNext")
+			System.out.println("id: " + id + " not in targetNext")
 	    	}
 		System.out.println("Finished checking all ids in sourceNext")
 
@@ -217,21 +217,17 @@ class ShortestPathTest {
 		targetNext.removeAll();
 		System.out.println("Cleared current buffer. Now sizeof sourceNext: " + sourceNext.size() + " sizeof targetNext: " + targetNext.size())
 	    }
-	    
-	    
-    
 
 	    // if we still cannot detect the path, we may discard the pair
 	    if(!pathDetected){
 		continue;
 	    }
-		
 
 	    // otherwise, proceed writing records
             List<String> queryRecord = new ArrayList();
             queryRecord.add(iid)
 	    queryRecord.add(targetId)
-            queryRecord.add(partitionId)
+            //queryRecord.add(partitionId)
 	    //queryRecord.add(oneHopCount.toString())
      	    //queryRecord.add(twoHopCount.toString())
             //queryRecord.add(neighbourhoodRetrievalInMicroSeconds.toString())
