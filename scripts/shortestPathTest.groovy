@@ -153,7 +153,7 @@ class ShortestPathTest {
 
         while(it.hasNext()) {
             // we know that query_1_param.txt has iid as first parameter
-	    String current_line = it.nextLine()
+	        String current_line = it.nextLine()
             String iid = current_line.split('\\|')[0]
 	    String targetId = current_line.split('\\|')[1]
 
@@ -240,7 +240,7 @@ class ShortestPathTest {
             }
 
 	    log.info("Retrieved cassandra stats for query with vertex: " + iid)
-
+          
             // add record to CSV
             csvPrinter.writeNext(queryRecord.toArray(new String[0]))
 
