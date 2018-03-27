@@ -1,4 +1,4 @@
-// Required to serialize resultsl
+// Required to serialize results
 :install com.opencsv opencsv 4.0
 
 import com.opencsv.CSVWriter
@@ -24,7 +24,6 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
 
-import java.util.ArrayList
 import java.util.concurrent.TimeUnit
 
 /**
@@ -111,13 +110,10 @@ public class CassandraLocalReadCounter {
     }
 
 
+class PartitioningOneHopTest {
 
-
-
-
-class ShortestPathTest {
-
-    private static String[] CSV_HEADERS = ["IID", "TARGET_ID", "TOTAL_DURATION",
+    private static String[] CSV_HEADERS = ["IID", "VERTEX_PARTITION", "1HOP",
+                                            "TOTAL_DURATION",
                                            "READS_C1",
                                            "READS_C2",
                                            "READS_C3",
@@ -136,7 +132,7 @@ class ShortestPathTest {
                                            "READS_C16"
     ]
 
-    static void start(Graph graph, String parametersFile, String outputFile, CassandraLocalReadCounter readCounter, int depth){
+    static void start(Graph graph, String parametersFile, String outputFile, CassandraLocalReadCounter readCounter) {
 
         GraphTraversalSource g = graph.traversal()
 
@@ -153,95 +149,40 @@ class ShortestPathTest {
 
         while(it.hasNext()) {
             // we know that query_1_param.txt has iid as first parameter
-	    String current_line = it.nextLine()
-            String iid = current_line.split('\\|')[0]
-	    String targetId = current_line.split('\\|')[1]
-
-	    Long sourceVertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
-	    Long targetVertexId = (Long) g.V().has('iid', 'person:' + targetId).next().id()
-	    Long partitionId = getPartitionId(sourceVertexId)	
-
+            String iid = it.nextLine().split('\\|')[0]
+	    
 	    log.info("New vertex id: " + iid)
 
-	    boolean pathDetected = false;
-	    long totalQueryDurationInMicroSeconds = 0;
+            DefaultTraversalMetrics metrics = g.V().has('iid', 'person:' + iid).out('knows').properties().profile().next()
+            Long vertexId = (Long) g.V().has('iid', 'person:' + iid).next().id()
+            Long partitionId = getPartitionId(vertexId)
 
-	    ArrayList<Long> sourceCurrent = new ArrayList()
-	    ArrayList<Long> sourceNext = new ArrayList()
-	    ArrayList<Long> targetCurrent = new ArrayList()
-	    ArrayList<Long> targetNext = new ArrayList()
+	    log.info("Vertex: " + iid + " succesfully queried")
 
-	    sourceCurrent.add(sourceVertexId)
-	    targetCurrent.add(targetVertexId)
+            long totalQueryDurationInMicroSeconds = metrics.getDuration(TimeUnit.MICROSECONDS)
+            // index 2 corresponds to valueMap step, where properties of each neighbour is actually retrieved from backend
+            //long neighbourhoodRetrievalInMicroSeconds = metrics.getMetrics(2).getDuration(TimeUnit.MICROSECONDS)
+            //long propertiesRetrievalInMicroSeconds = metrics.getMetrics(3).getDuration(TimeUnit.MICROSECONDS)
 
-	    int count = 0;
+            // index 1 corresponds to out step
+            int oneHopCount = metrics.getMetrics(1).getCount('elementCount')
+          
 
-	    System.out.println("Entering loop with current depth: " + count)
-	    while(count < depth){
-		 /// metrics calculation
-                DefaultTraversalMetrics metrics =  g.V(sourceCurrent).out('knows').properties().profile().next()
-                totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
-                metrics = g.V(targetCurrent).out('knows').properties().profile().next()
-                totalQueryDurationInMicroSeconds += metrics.getDuration(TimeUnit.MICROSECONDS)
-
-	    	// get first hop neighbor of source and target
-
-		//System.out.println("Getting vertex ids in next layer")
-            	sourceNext.addAll(g.V(sourceCurrent).out('knows').id().fold().next())
-	    	targetNext.addAll(g.V(targetCurrent).out('knows').id().fold().next())
-
-		//System.out.println("Done in getting ids")
-		//System.out.println("sourceNext with size: " + sourceNext.size() + " " + "targetNext with size: " + targetNext.size())
-	    
-	    	// check for intersection
-		//System.out.println("Checking id from sourceNext in targetNext....")
-	    	for(long id: sourceNext){
-			//System.out.println("Checking id: " + id)
-			if(targetNext.contains(id)){
-				System.out.println("!!! id: " + id + "  in targetNext")
-				pathDetected = true;
-				break;
-			}
-			//System.out.println("id: " + id + " not in targetNext")
-	    	}
-		//System.out.println("Finished checking all ids in sourceNext")
-
-		if(pathDetected) break;
-	        count++;
-		// update lists
-		sourceCurrent.removeAll();
-		sourceCurrent.addAll(sourceNext);
-		targetCurrent.removeAll();
-		targetCurrent.addAll(targetNext);
-		sourceNext.removeAll();
-		targetNext.removeAll();
-		//System.out.println("Cleared current buffer. Now sizeof sourceNext: " + sourceNext.size() + " sizeof targetNext: " + targetNext.size())
-	    }
-
-	    // if we still cannot detect the path, we may discard the pair
-	    if(!pathDetected){
-		System.out.println("Path not detected for: " + iid)
-		continue;
-	    }
-
-	    // otherwise, proceed writing records
             List<String> queryRecord = new ArrayList();
             queryRecord.add(iid)
-	    queryRecord.add(targetId)
-            //queryRecord.add(partitionId)
-	    //queryRecord.add(oneHopCount.toString())
-     	    //queryRecord.add(twoHopCount.toString())
+            queryRecord.add(partitionId.toString())
+            queryRecord.add(oneHopCount.toString())
+           
             //queryRecord.add(neighbourhoodRetrievalInMicroSeconds.toString())
             //queryRecord.add(propertiesRetrievalInMicroSeconds.toString())
             queryRecord.add(totalQueryDurationInMicroSeconds.toString())
 
-	    List<Integer> readCounts = readCounter.updateReadCount()
+            List<Integer> readCounts = readCounter.updateReadCount()
             for(int i = 0 ; i < readCounts.size() ; i++) {
                 queryRecord.add(readCounts.get(i).toString())
             }
 
 	    log.info("Retrieved cassandra stats for query with vertex: " + iid)
-
             // add record to CSV
             csvPrinter.writeNext(queryRecord.toArray(new String[0]))
 
@@ -253,13 +194,13 @@ class ShortestPathTest {
         csvPrinter.close()
     }
 
-    static void run(String graphConfigurationFile, String parametersFile, String outputFile, String jmxConfigurationFile, int depth) {
-	log.info("Opening the graph file")
-        Configuration graphConfig = new PropertiesConfiguration(graphConfigurationFile)
+    static void run(String graphConfigurationFile, String parametersFile, String outputFile, String jmxConfigurationFile) {
+        log.info("Opening the graph file")
+	Configuration graphConfig = new PropertiesConfiguration(graphConfigurationFile)
         Graph graph = JanusGraphFactory.open(graphConfig)
-	log.info("JanusGraph Opened")
-	CassandraLocalReadCounter readCounter = new CassandraLocalReadCounter(jmxConfigurationFile)
-        start(graph, parametersFile, outputFile, readCounter, depth)
+        log.info("JanusGraph Opened")
+	CassandraLocalReadCounter  readCounter = new CassandraLocalReadCounter(jmxConfigurationFile)
+        start(graph, parametersFile, outputFile, readCounter)
     }
 
     static Long getPartitionId(Long id) {
@@ -268,3 +209,4 @@ class ShortestPathTest {
     }
 
 }
+
