@@ -1,4 +1,4 @@
-package ca.uwaterloo.cs.sgp.streaming.zhuoran;
+package ca.uwaterloo.cs.sgp.streaming;
 
 import org.apache.commons.collections.ListUtils;
 import org.apache.commons.configuration2.Configuration;
@@ -9,7 +9,6 @@ import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -30,6 +29,8 @@ public class EdgeCutSGP {
     private long numberOfEdges = 0;
     private long numberOfEdgecut = 0;
 
+    private HashSet<String> edgeLabels = new HashSet<>();
+
     public HashMap<String, Integer> vertex_to_partition;
 
     LineIterator lineIterator;
@@ -46,7 +47,7 @@ public class EdgeCutSGP {
     // neighbor relationships for each vertex, calculate the capacity
     // of each partition, and set the size of each partition to 0 by
     // default
-    public EdgeCutSGP(String file, int k, int numberOfVertices, Double slack){
+    public EdgeCutSGP(String file, int k, int numberOfVertices, Double slack, String[] edgeLabels){
         // Read all lines of the file to get the size of graph
         try{
             lineIterator = FileUtils.lineIterator(FileUtils.getFile(file), "UTF-8");
@@ -54,6 +55,8 @@ public class EdgeCutSGP {
             this.size_of_graph = numberOfVertices;
             this.slack = slack;
             this.capacity = (int) (  ( this.size_of_graph / k ) * (1 + slack) );
+            // add all the given labels into set of permitted labels
+            Arrays.stream(edgeLabels).forEach(label -> this.edgeLabels.add(label));
 
         }  catch(FileNotFoundException e){
             System.out.println("DataSet file not found.");
@@ -78,6 +81,10 @@ public class EdgeCutSGP {
                 continue;
 
             String[] temp = next.split(",");
+            // if user specified set of labels and given label is not in the set, skip this edge
+            if(!this.edgeLabels.isEmpty() && !this.edgeLabels.contains(temp[0]))
+                continue;
+
             String composed_id = temp[1];
             result.add( composed_id );
             index++;
@@ -100,6 +107,32 @@ public class EdgeCutSGP {
         }
         return count;
     }
+
+    int hash_partition(String vertexID, List<String> edgeList) {
+        int[] numberOfNeighbours = new int[this.numberOfPartitions];
+        int argmax = -1;
+
+        LinkedList<Integer> TieBreaker = new LinkedList<Integer>();
+        for(int i = 0; i < this.numberOfPartitions; i++){
+            numberOfNeighbours[i] = neighbors_in_partition(i, edgeList);
+            TieBreaker.add(i);
+        }
+
+        Random rand = new Random();
+        int value = rand.nextInt(TieBreaker.size());
+        argmax = TieBreaker.get(value);
+
+        // compute the edge cut
+        for(int i = 0 ; i < this.numberOfPartitions ; i++) {
+            this.numberOfEdges += numberOfNeighbours[i];
+            if(i != argmax) {
+                this.numberOfEdgecut += numberOfNeighbours[i];
+            }
+        }
+
+        return argmax;
+    }
+
     // Choose the partition for next vertex based on the formula in LDG
     int ldg_partition(String vertexID, List<String> edgeList){
         double result = -1;
@@ -198,6 +231,8 @@ public class EdgeCutSGP {
                     List<String> combinedEdges = ListUtils.union(outgoingEdges, incomingEdges);
                     if(algorithm.equals("ldg")){
                     	next_partition = ldg_partition(vertexIdentifier, combinedEdges);
+                    } else if (algorithm.equals("hash")) {
+                        next_partition = hash_partition(vertexIdentifier, combinedEdges);
                     }
                     else{
                     	next_partition = fennel_partition(vertexIdentifier, combinedEdges);
@@ -207,7 +242,9 @@ public class EdgeCutSGP {
                 else {
                 	if(algorithm.equals("ldg")){
                 		next_partition = ldg_partition(vertexIdentifier, outgoingEdges);
-                	}
+                	} else if(algorithm.equals("hash")){
+                        next_partition = hash_partition(vertexIdentifier, outgoingEdges);
+                    }
                 	else{
                 		next_partition = fennel_partition(vertexIdentifier, outgoingEdges);
                 	}
@@ -252,6 +289,7 @@ public class EdgeCutSGP {
 
         String inputFile = config.getString("sgp.inputfile");
         String outputFile = config.getString("sgp.outputfile");
+        String[] edgeLabels = config.getStringArray("sgp.edgelabels");
         Integer numberOfPartitions = config.getInt("sgp.partitioncount");
         Integer numberOfVertices = config.getInt("sgp.vertexcount");
         Integer numberOfEdges = config.getInt("sgp.edgecount");
@@ -260,7 +298,7 @@ public class EdgeCutSGP {
         Double balanceSlack = config.getDouble("sgp.balanceslack");
 
 
-        EdgeCutSGP pa = new EdgeCutSGP(inputFile, numberOfPartitions, numberOfVertices, balanceSlack);
+        EdgeCutSGP pa = new EdgeCutSGP(inputFile, numberOfPartitions, numberOfVertices, balanceSlack, edgeLabels);
         if(algorithm.equals("ldg")){
         	pa.streamingPartition(undirect, algorithm);
         }
