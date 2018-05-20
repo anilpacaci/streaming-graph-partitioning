@@ -12,6 +12,8 @@ val inputFile = "/home/apacaci/datasets/uk2007-05/uk2007-05-snap"
 val lookupFile = "/home/apacaci/datasets/uk2007-05/uk2007-05-metis-lookup"
 val metisHeader = "/home/apacaci/datasets/uk2007-05/uk2007-05-metis-header"
 val metisAdjacencyFile = "/home/apacaci/datasets/uk2007-05/uk2007-05-metis-adjacency"
+val metisIdAdjacencyFile = "/home/apacaci/datasets/uk2007-05/uk2007-05-metis-id-adjacency"
+
 
 // val inputFile = "/home/apacaci/datasets/wrn/wrn-snap.txt"
 // val lookupFile = "/home/apacaci/datasets/wrn/wrn-metis-lookup"
@@ -24,24 +26,15 @@ val metisAdjacencyFile = "/home/apacaci/datasets/uk2007-05/uk2007-05-metis-adjac
 //val metisAdjacencyFile = "/home/apacaci/datasets/twitter_rv/twitter_rv_metis_adjacency"
 
 
-val snapText = sc.textFile(inputFile).coalesce(38400)
-// for undirected graph, create edges in both direction, metis uses undirected graphs
-val edgesDuplicate = snapText.flatMap(e => Array((e.split("\\s")(0).toLong, Set(e.split("\\s")(1).toLong) ), (e.split("\\s")(1).toLong, Set(e.split("\\s")(0).toLong) ) ) )
-
- val edges = edgesDuplicate //.distinct
-
-val adjacency = edges.reduceByKey((l1, l2) => l1 ++ l2)
-
-val lookup = adjacency.map( t => t._1 ).zipWithIndex.map( t => (t._1, t._2 + 1))
-
-lookup.saveAsObjectFile(lookupFile)
-
 // since lookup table is relatively small, we can broadcast it
 // val lookupMap = sc.broadcast(lookup.collectAsMap)
 val lookupMap = lookup.collectAsMap
-val vertexCount = lookupMap.size
-val edgeCount = edges.count
 
+
+val adjacency = sc.textFile(metisAdjacencyFile).map(line => {
+  val longArray = line.split(" ").map(_.toLong)
+  ( longArray(0), longArray.slice(2, longArray(1)) )
+})
 
 // now we just need to iterate over graph and replace ids
 val adjacencyWithIdentifiers = adjacency.map( vertex => {
@@ -50,14 +43,12 @@ val adjacencyWithIdentifiers = adjacency.map( vertex => {
   (sourceid, neighbours)
 })
 
-
-
 // now we can output in METIS compatible format, eliminatng source id since METIS implicitly assumes line number is a source id
 val metisAdjacency = adjacencyWithIdentifiers.map( l => l._2.mkString(" "))
 val header = sc.parallelize(Seq( vertexCount + " " + (edgeCount / 2) ))
 
 header.saveAsTextFile(metisHeader)
-metisAdjacency.saveAsTextFile(metisAdjacencyFile)
+metisAdjacency.saveAsTextFile(metisIdAdjacencyFile)
 
 
 
