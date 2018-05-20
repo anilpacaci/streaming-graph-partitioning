@@ -32,8 +32,6 @@ public class CassandraLocalReadCounter {
         cassandraJMXPort = configuration.getString("cassandra.jmx");
         numberOfInstances = configuration.getInt("cassandra.clustersize");
 
-        urls = new ArrayList<>(numberOfInstances);
-        jmxConnectors = new ArrayList<>(numberOfInstances);
         serverConnections = new ArrayList<>(numberOfInstances);
         lastReads = new Integer[numberOfInstances];
 
@@ -45,9 +43,10 @@ public class CassandraLocalReadCounter {
             serverConnections.add(mbsc);
         }
 
-        readCount = new ObjectName("org.apache.cassandra.metrics:type=Keyspace,keyspace=janusgraph,name=ReadLatency");
+        readCountAttribute = new ObjectName("org.apache.cassandra.metrics:type=Keyspace,keyspace=janusgraph,name=ReadLatency");
 
         for(int i = 0 ; i < numberOfInstances ; i++) {
+	    MBeanServerConnection mbsc = serverConnections.get(i)
             int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
             lastReads[i] = readCount;
         }
@@ -61,10 +60,12 @@ public class CassandraLocalReadCounter {
         List<Integer> reads = new ArrayList();
 
         for(int i = 0 ; i < numberOfInstances ; i++) {
+            MBeanServerConnection mbsc = serverConnections.get(i)
             int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
             reads.add(readCount);
             lastReads[i] = readCount;
         }
+	return reads
     }
 
     /**
@@ -76,6 +77,7 @@ public class CassandraLocalReadCounter {
         List<Integer> reads = new ArrayList();
 
         for(int i = 0 ; i < numberOfInstances ; i++) {
+            MBeanServerConnection mbsc = serverConnections.get(i)
             int readCount = Integer.parseInt(mbsc.getAttribute(readCountAttribute, "Count").toString());
             reads.add(readCount - lastReads[i]);
             lastReads[i] = readCount;
