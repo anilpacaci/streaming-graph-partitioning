@@ -26,25 +26,31 @@ val metisIdAdjacencyFile = "/home/apacaci/datasets/uk2007-05/uk2007-05-metis-id-
 //val metisAdjacencyFile = "/home/apacaci/datasets/twitter_rv/twitter_rv_metis_adjacency"
 
 
+val lookup = sc.objectFile[(Long, Long)](lookupFile)
+
 // since lookup table is relatively small, we can broadcast it
 // val lookupMap = sc.broadcast(lookup.collectAsMap)
-val lookupMap = lookup.collectAsMap
+val lookupMap = sc.broadcast(lookup.collectAsMap)
+val vertexCount = lookupMap.value.size
+val edgeCount = vertexCount * 10
 
-
+// adjacency file has the format of source, degree, [neighbours], remove the degree
 val adjacency = sc.textFile(metisAdjacencyFile).map(line => {
   val longArray = line.split(" ").map(_.toLong)
-  ( longArray(0), longArray.slice(2, longArray(1)) )
+  ( longArray(0), longArray.slice(2, longArray.size) )
 })
 
 // now we just need to iterate over graph and replace ids
 val adjacencyWithIdentifiers = adjacency.map( vertex => {
-  val sourceid = lookupMap.get(vertex._1).get
-  val neighbours = vertex._2.map( n => lookupMap.get(n).get).toList.sortWith(_ < _)
+  val sourceid = lookupMap.value.get(vertex._1).get
+  val neighbours = vertex._2.map( n => lookupMap.value.get(n).get).toList.sortWith(_ < _)
   (sourceid, neighbours)
 })
 
+val adjacencyWithIdentifiersSorted = adjacencyWithIdentifiers.sortByKey
+
 // now we can output in METIS compatible format, eliminatng source id since METIS implicitly assumes line number is a source id
-val metisAdjacency = adjacencyWithIdentifiers.map( l => l._2.mkString(" "))
+val metisAdjacency = adjacencyWithIdentifiersSorted.map( l => l._2.size + " " + l._2.mkString(" "))
 val header = sc.parallelize(Seq( vertexCount + " " + (edgeCount / 2) ))
 
 header.saveAsTextFile(metisHeader)
