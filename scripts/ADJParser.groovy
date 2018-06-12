@@ -342,34 +342,36 @@ class ADJParser {
 
         // index
         mgmt = (ManagementSystem) janusGraph.openManagement();
-        if(mgmt.getVertexLabel("person") == null) 
-		mgmt.makeVertexLabel("person").make();
+        if (mgmt.getVertexLabel("person") == null) {
+            mgmt.makeVertexLabel("person").make();
+        }
         mgmt.commit();
 
         mgmt = (ManagementSystem) janusGraph.openManagement();
-	if(mgmt.getEdgeLabel("knows") == null)
-       		mgmt.makeEdgeLabel("knows").make();
+        if (mgmt.getEdgeLabel("knows") == null) {
+            mgmt.makeEdgeLabel("knows").make();
+        }
         mgmt.commit();
 
-	System.out.println("Labels are created")
+        System.out.println("Labels are created")
 
         // creationDate
         mgmt = (ManagementSystem) janusGraph.openManagement();
-	if(mgmt.getPropertyKey('creationDate') == null ) {
-        	mgmt.makePropertyKey("creationDate").dataType(Long.class)
-        	        .cardinality(Cardinality.SINGLE).make();
-	}
+        if (mgmt.getPropertyKey('creationDate') == null) {
+            mgmt.makePropertyKey("creationDate").dataType(Long.class)
+                    .cardinality(Cardinality.SINGLE).make();
+        }
         mgmt.commit();
 
         // indexing iid and id_long properties
         mgmt = (ManagementSystem) janusGraph.openManagement();
-        mgmt.makePropertyKey("iid").dataType(String.class)
-                .cardinality(Cardinality.SINGLE).make();
-        mgmt.commit();
+        if (mgmt.getGraphIndex("byIid") == null) {
+            mgmt.makePropertyKey("iid").dataType(String.class)
+                    .cardinality(Cardinality.SINGLE).make();
 
-        mgmt = (ManagementSystem) janusGraph.openManagement();
-        PropertyKey iid = mgmt.getPropertyKey("iid");
-        mgmt.buildIndex("byIid", Vertex.class).addKey(iid).buildCompositeIndex();
+            PropertyKey iid = mgmt.getPropertyKey("iid");
+            mgmt.buildIndex("byIid", Vertex.class).addKey(iid).buildCompositeIndex();
+        }
         mgmt.commit();
 
         mgmt.awaitGraphIndexStatus(janusGraph, "byIid").call();
@@ -381,13 +383,13 @@ class ADJParser {
 
 
         mgmt = (ManagementSystem) janusGraph.openManagement();
-        mgmt.makePropertyKey("iid_long").dataType(Long.class)
-                .cardinality(Cardinality.SINGLE).make();
-        mgmt.commit();
+        if (mgmt.getGraphIndex("byIidLong") == null) {
+            mgmt.makePropertyKey("iid_long").dataType(Long.class)
+                        .cardinality(Cardinality.SINGLE).make();
 
-        mgmt = (ManagementSystem) janusGraph.openManagement();
-        PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
-        mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
+            PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
+            mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
+        }
         mgmt.commit();
 
         mgmt.awaitGraphIndexStatus(janusGraph, "byIidLong").call();
@@ -397,7 +399,7 @@ class ADJParser {
                 .get();
         mgmt.commit();
 
-	System.out.println("Indices are created")
+	    System.out.println("Indices are created")
     }
 
     static class IDMapping<T> {
