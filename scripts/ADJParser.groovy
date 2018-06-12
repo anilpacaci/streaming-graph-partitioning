@@ -16,19 +16,17 @@
  */
 
 
+import com.whalin.MemCached.MemCachedClient
+import com.whalin.MemCached.SockIOPool
 import org.apache.commons.configuration.Configuration
 import org.apache.commons.configuration.PropertiesConfiguration
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.LineIterator
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.apache.tinkerpop.gremlin.structure.T
 import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.apache.tinkerpop.gremlin.structure.VertexProperty
-
-import org.janusgraph.core.JanusGraph
 import org.janusgraph.core.Cardinality
-import org.janusgraph.core.Multiplicity
+import org.janusgraph.core.JanusGraph
 import org.janusgraph.core.PropertyKey
 import org.janusgraph.core.schema.SchemaAction
 import org.janusgraph.graphdb.database.management.ManagementSystem
@@ -36,20 +34,12 @@ import org.janusgraph.graphdb.database.management.ManagementSystem
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.text.SimpleDateFormat
-
-import com.whalin.MemCached.MemCachedClient;
-import com.whalin.MemCached.SockIOPool
-
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Callable
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong;
-
-import java.util.Timer
-import java.util.TimerTask
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * This is a Groovy Script to run inside gremlin console, for loading SNAP ADJ formatted data into Tinkerpop Competible Graph.
@@ -60,6 +50,10 @@ import java.util.TimerTask
 class ADJParser {
 
     static TX_MAX_RETRIES = 1000
+
+    enum ElementType {
+        VERTEX, PROPERTY, EDGE
+    }
 
     static class SharedGraphReader {
 
@@ -110,10 +104,10 @@ class ADJParser {
             writerThread = new Thread() {
                 @Override
                 void run() {
-                    while(it.hasNext()) {
+                    while (it.hasNext()) {
                         List<String> lines = new ArrayList<>(batchSize)
-                        for(int i = 0 ; i < batchSize && it.hasNext() ; i++) {
-                            lines.add (it.nextLine() )
+                        for (int i = 0; i < batchSize && it.hasNext(); i++) {
+                            lines.add(it.nextLine())
                         }
                         batchQueue.put(lines)
                     }
@@ -173,9 +167,9 @@ class ADJParser {
             boolean txSucceeded;
             long txFailCount;
 
-            while( graphReader.hasNext() ) {
+            while (graphReader.hasNext()) {
                 List<String> lines = graphReader.next()
-                if(lines == null) {
+                if (lines == null) {
                     // keep polling until queue is empty
                     continue
                 }
@@ -216,8 +210,8 @@ class ADJParser {
                                 Long id1 = idMapping.get(entityName + ":" + colVals[0])
                                 source = g.V(id1).next()
 
-                                for(int j = 0; j < degree; j++) {
-                                    Long id2 = idMapping.get(entityName + ":" + colVals[j+2])
+                                for (int j = 0; j < degree; j++) {
+                                    Long id2 = idMapping.get(entityName + ":" + colVals[j + 2])
                                     vertex2 = g.V(id2).next()
                                     neighbours.add(vertex2)
                                 }
@@ -225,7 +219,7 @@ class ADJParser {
 
                                 List<Object> keyValues = new ArrayList<>();
 
-                                for(Vertex neighbour : neighbours) {
+                                for (Vertex neighbour : neighbours) {
                                     source.addEdge(edgeLabel, neighbour, keyValues.toArray());
                                 }
                             }
@@ -251,7 +245,6 @@ class ADJParser {
                 }
             }
             // means that no more lines to return
-            return
         }
     }
 
@@ -279,7 +272,7 @@ class ADJParser {
         try {
             SharedGraphReader graphReader = new SharedGraphReader(Paths.get(inputAdjFile), batchSize, progReportPeriod)
             List<GraphLoader> tasks = new ArrayList<GraphLoader>()
-            for(int i = 0 ; i < threadCount ; i++) {
+            for (int i = 0; i < threadCount; i++) {
                 tasks.add(new GraphLoader(graph, graphReader, ElementType.VERTEX, idMapping))
             }
             graphReader.start()
@@ -289,7 +282,7 @@ class ADJParser {
 
             graphReader = new SharedGraphReader(Paths.get(inputAdjFile), batchSize, progReportPeriod)
             tasks = new ArrayList<GraphLoader>()
-            for(int i = 0 ; i < threadCount ; i++) {
+            for (int i = 0; i < threadCount; i++) {
                 tasks.add(new GraphLoader(graph, graphReader, ElementType.EDGE, idMapping))
             }
             graphReader.start()
@@ -314,8 +307,8 @@ class ADJParser {
         try {
             LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile), "UTF-8")
             System.out.println("Start processing partition lookup file: " + lookupFile)
-     	    long counter = 0
-            while(it.hasNext()) {
+            long counter = 0
+            while (it.hasNext()) {
                 String[] parts = it.nextLine().split("\\s")
                 String id = parts[0]
                 Integer partition = Integer.valueOf(parts[1])
@@ -323,7 +316,7 @@ class ADJParser {
                 partitionMappingServer.set(id, partition)
                 counter++
 
-                if(counter % batchSize == 0) {
+                if (counter % batchSize == 0) {
                     System.out.println("Imported: " + counter)
                 }
             }
@@ -373,34 +366,33 @@ class ADJParser {
             PropertyKey iid = mgmt.getPropertyKey("iid");
             mgmt.buildIndex("byIid", Vertex.class).addKey(iid).buildCompositeIndex();
             mgmt.awaitGraphIndexStatus(janusGraph, "byIid").call();
-
             mgmt = (ManagementSystem) janusGraph.openManagement();
-            mgmt.updateIndex(mgmt.getGraphIndex("byIid"), SchemaAction.REINDEX)
-                .get();
+            mgmt.updateIndex(mgmt.getGraphIndex("byIid"), SchemaAction.REINDEX).get();
         }
         mgmt.commit();
+
 
         mgmt = (ManagementSystem) janusGraph.openManagement();
         if (mgmt.getGraphIndex("byIidLong") == null) {
             mgmt.makePropertyKey("iid_long").dataType(Long.class)
-                        .cardinality(Cardinality.SINGLE).make();
+                    .cardinality(Cardinality.SINGLE).make();
 
             PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
             mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
- 	    mgmt.awaitGraphIndexStatus(janusGraph, "byIidLong").call();
+            mgmt.awaitGraphIndexStatus(janusGraph, "byIidLong").call();
 
             mgmt = (ManagementSystem) janusGraph.openManagement();
-       	    mgmt.updateIndex(mgmt.getGraphIndex("byIidLong"), SchemaAction.REINDEX)
-                .get();
+            mgmt.updateIndex(mgmt.getGraphIndex("byIidLong"), SchemaAction.REINDEX)
+                    .get();
         }
         mgmt.commit();
 
-	    System.out.println("Indices are created")
+        System.out.println("Indices are created")
     }
 
     static class PartitionMapping<T> {
         private MemCachedClient client;
-	private String entityPrefix = "person:";
+        private String entityPrefix = "person:";
 
         public PartitionMapping(String instanceName, String... servers) {
             SockIOPool pool = SockIOPool.getInstance(instanceName);
@@ -422,7 +414,5 @@ class ADJParser {
         public void set(String identifier, T id) {
             client.set(entityPrefix + identifier, id)
         }
-
-    enum ElementType {VERTEX, PROPERTY, EDGE}
-
+    }
 }
