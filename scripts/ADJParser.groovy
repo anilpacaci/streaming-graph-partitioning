@@ -25,9 +25,14 @@ import org.apache.tinkerpop.gremlin.structure.Graph
 import org.apache.tinkerpop.gremlin.structure.T
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
-import org.janusgraph.core.JanusGraph
 
-import javax.security.auth.login.Configuration
+import org.janusgraph.core.JanusGraph
+import org.janusgraph.core.Cardinality
+import org.janusgraph.core.Multiplicity
+import org.janusgraph.core.PropertyKey
+import org.janusgraph.core.schema.SchemaAction
+import org.janusgraph.graphdb.database.management.ManagementSystem
+
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.text.SimpleDateFormat
@@ -211,8 +216,8 @@ class ADJParser {
                                 Long id1 = idMappingServer.get(entityName + ":" + colVals[0])
                                 source = g.V(id1).next()
 
-                                for(int i = 0; i < degree; i++) {
-                                    Long id2 = idMapping.get(entityName + ":" + colVals[i+2])
+                                for(int j = 0; j < degree; j++) {
+                                    Long id2 = idMapping.get(entityName + ":" + colVals[j+2])
                                     vertex2 = g.V(id2).next()
                                     neighbours.add(vertex2)
                                 }
@@ -272,7 +277,7 @@ class ADJParser {
         ExecutorService executor = Executors.newFixedThreadPool(threadCount)
 
         try {
-            SharedGraphReader graphReader = new SharedGraphReader(Paths.get(inputFile), batchSize, progReportPeriod)
+            SharedGraphReader graphReader = new SharedGraphReader(Paths.get(inputAdjFile), batchSize, progReportPeriod)
             List<GraphLoader> tasks = new ArrayList<GraphLoader>()
             for(int i = 0 ; i < threadCount ; i++) {
                 tasks.add(new GraphLoader(graph, graphReader, ElementType.VERTEX, idMapping))
@@ -282,7 +287,7 @@ class ADJParser {
             graphReader.stop()
 
 
-            graphReader = new SharedGraphReader(Paths.get(inputBaseDir, fileName), batchSize, progReportPeriod)
+            graphReader = new SharedGraphReader(Paths.get(inputAdjFile), batchSize, progReportPeriod)
             tasks = new ArrayList<GraphLoader>()
             for(int i = 0 ; i < threadCount ; i++) {
                 tasks.add(new GraphLoader(graph, graphReader, ElementType.EDGE, idMapping))
@@ -303,7 +308,7 @@ class ADJParser {
     static void partitionLookupImport(Configuration configuration) {
         String lookupFile = configuration.getString("partition.lookup")
         String[] servers = configuration.getStringArray("memcached.address")
-        partitionMappingServer = new IDMapping<Integer>("partition-lookup", servers)
+        IDMapping<Integer> partitionMappingServer = new IDMapping<Integer>("partition-lookup", servers)
         int batchSize = configuration.getInt("batch.size")
 
         try {
@@ -337,17 +342,23 @@ class ADJParser {
 
         // index
         mgmt = (ManagementSystem) janusGraph.openManagement();
-        mgmt.makeVertexLabel("person").make();
+        if(mgmt.getVertexLabel("person") == null) 
+		mgmt.makeVertexLabel("person").make();
         mgmt.commit();
 
         mgmt = (ManagementSystem) janusGraph.openManagement();
-        mgmt.makeEdgeLabel("knows").make();
+	if(mgmt.getEdgeLabel("knows") == null)
+       		mgmt.makeEdgeLabel("knows").make();
         mgmt.commit();
+
+	System.out.println("Labels are created")
 
         // creationDate
         mgmt = (ManagementSystem) janusGraph.openManagement();
-        mgmt.makePropertyKey("creationDate").dataType(Long.class)
-                .cardinality(Cardinality.SINGLE).make();
+	if(mgmt.getPropertyKey('creationDate') == null ) {
+        	mgmt.makePropertyKey("creationDate").dataType(Long.class)
+        	        .cardinality(Cardinality.SINGLE).make();
+	}
         mgmt.commit();
 
         // indexing iid and id_long properties
@@ -385,6 +396,8 @@ class ADJParser {
         mgmt.updateIndex(mgmt.getGraphIndex("byIidLong"), SchemaAction.REINDEX)
                 .get();
         mgmt.commit();
+
+	System.out.println("Indices are created")
     }
 
     static class IDMapping<T> {
