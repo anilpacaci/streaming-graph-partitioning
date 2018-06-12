@@ -205,7 +205,7 @@ class ADJParser {
                                 Vertex vertex = graph.addVertex(keyValues.toArray());
 
                                 Long id = (Long) vertex.id()
-                                idMapping.pit(identifier, id)
+                                idMapping.put(identifier, id)
 
                             } else {
                                 GraphTraversalSource g = graph.traversal();
@@ -213,7 +213,7 @@ class ADJParser {
                                 Long degree = Long.parseLong(colVals[1])
                                 List<Vertex> neighbours = new ArrayList<>();
 
-                                Long id1 = idMappingServer.get(entityName + ":" + colVals[0])
+                                Long id1 = idMapping.get(entityName + ":" + colVals[0])
                                 source = g.V(id1).next()
 
                                 for(int j = 0; j < degree; j++) {
@@ -308,18 +308,19 @@ class ADJParser {
     static void partitionLookupImport(Configuration configuration) {
         String lookupFile = configuration.getString("partition.lookup")
         String[] servers = configuration.getStringArray("memcached.address")
-        IDMapping<Integer> partitionMappingServer = new IDMapping<Integer>("partition-lookup", servers)
+        PartitionMapping<Integer> partitionMappingServer = new PartitionMapping<Integer>("partition-lookup", servers)
         int batchSize = configuration.getInt("batch.size")
 
         try {
             LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile), "UTF-8")
-            long counter = 0
+            System.out.println("Start processing partition lookup file: " + lookupFile)
+     	    long counter = 0
             while(it.hasNext()) {
-                String[] parts = it.nextLine().split(",")
+                String[] parts = it.nextLine().split("\\s")
                 String id = parts[0]
                 Integer partition = Integer.valueOf(parts[1])
 
-                partitionMappingServer.setPartition(id, partition)
+                partitionMappingServer.set(id, partition)
                 counter++
 
                 if(counter % batchSize == 0) {
@@ -342,68 +343,66 @@ class ADJParser {
 
         // index
         mgmt = (ManagementSystem) janusGraph.openManagement();
-        if(mgmt.getVertexLabel("person") == null) 
-		mgmt.makeVertexLabel("person").make();
+        if (mgmt.getVertexLabel("person") == null) {
+            mgmt.makeVertexLabel("person").make();
+        }
         mgmt.commit();
 
         mgmt = (ManagementSystem) janusGraph.openManagement();
-	if(mgmt.getEdgeLabel("knows") == null)
-       		mgmt.makeEdgeLabel("knows").make();
+        if (mgmt.getEdgeLabel("knows") == null) {
+            mgmt.makeEdgeLabel("knows").make();
+        }
         mgmt.commit();
 
-	System.out.println("Labels are created")
+        System.out.println("Labels are created")
 
         // creationDate
         mgmt = (ManagementSystem) janusGraph.openManagement();
-	if(mgmt.getPropertyKey('creationDate') == null ) {
-        	mgmt.makePropertyKey("creationDate").dataType(Long.class)
-        	        .cardinality(Cardinality.SINGLE).make();
-	}
+        if (mgmt.getPropertyKey('creationDate') == null) {
+            mgmt.makePropertyKey("creationDate").dataType(Long.class)
+                    .cardinality(Cardinality.SINGLE).make();
+        }
         mgmt.commit();
 
         // indexing iid and id_long properties
         mgmt = (ManagementSystem) janusGraph.openManagement();
-        mgmt.makePropertyKey("iid").dataType(String.class)
-                .cardinality(Cardinality.SINGLE).make();
-        mgmt.commit();
+        if (mgmt.getGraphIndex("byIid") == null) {
+            mgmt.makePropertyKey("iid").dataType(String.class)
+                    .cardinality(Cardinality.SINGLE).make();
 
-        mgmt = (ManagementSystem) janusGraph.openManagement();
-        PropertyKey iid = mgmt.getPropertyKey("iid");
-        mgmt.buildIndex("byIid", Vertex.class).addKey(iid).buildCompositeIndex();
-        mgmt.commit();
+            PropertyKey iid = mgmt.getPropertyKey("iid");
+            mgmt.buildIndex("byIid", Vertex.class).addKey(iid).buildCompositeIndex();
+            mgmt.awaitGraphIndexStatus(janusGraph, "byIid").call();
 
-        mgmt.awaitGraphIndexStatus(janusGraph, "byIid").call();
-
-        mgmt = (ManagementSystem) janusGraph.openManagement();
-        mgmt.updateIndex(mgmt.getGraphIndex("byIid"), SchemaAction.REINDEX)
+            mgmt = (ManagementSystem) janusGraph.openManagement();
+            mgmt.updateIndex(mgmt.getGraphIndex("byIid"), SchemaAction.REINDEX)
                 .get();
-        mgmt.commit();
-
-
-        mgmt = (ManagementSystem) janusGraph.openManagement();
-        mgmt.makePropertyKey("iid_long").dataType(Long.class)
-                .cardinality(Cardinality.SINGLE).make();
+        }
         mgmt.commit();
 
         mgmt = (ManagementSystem) janusGraph.openManagement();
-        PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
-        mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
-        mgmt.commit();
+        if (mgmt.getGraphIndex("byIidLong") == null) {
+            mgmt.makePropertyKey("iid_long").dataType(Long.class)
+                        .cardinality(Cardinality.SINGLE).make();
 
-        mgmt.awaitGraphIndexStatus(janusGraph, "byIidLong").call();
+            PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
+            mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
+ 	    mgmt.awaitGraphIndexStatus(janusGraph, "byIidLong").call();
 
-        mgmt = (ManagementSystem) janusGraph.openManagement();
-        mgmt.updateIndex(mgmt.getGraphIndex("byIidLong"), SchemaAction.REINDEX)
+            mgmt = (ManagementSystem) janusGraph.openManagement();
+       	    mgmt.updateIndex(mgmt.getGraphIndex("byIidLong"), SchemaAction.REINDEX)
                 .get();
+        }
         mgmt.commit();
 
-	System.out.println("Indices are created")
+	    System.out.println("Indices are created")
     }
 
-    static class IDMapping<T> {
+    static class PartitionMapping<T> {
         private MemCachedClient client;
+	private String entityPrefix = "person:";
 
-        public IDMapping(String instanceName, String... servers) {
+        public PartitionMapping(String instanceName, String... servers) {
             SockIOPool pool = SockIOPool.getInstance(instanceName);
             pool.setServers(servers);
             pool.setFailover(true);
@@ -416,26 +415,13 @@ class ADJParser {
             pool.setAliveCheck(true);
             pool.initialize();
 
-            client = new MemCachedClient(INSTANCE_NAME);
+            client = new MemCachedClient(instanceName);
             // client.flushAll();
         }
 
-        public T get(String identifier) {
-            Object value = client.get(ID_MAPPING_PREFIX + identifier);
-            if (value == null)
-                return null;
-            return (T) value;
-        }
-
         public void set(String identifier, T id) {
-            client.set(ID_MAPPING_PREFIX + identifier, id)
+            client.set(entityPrefix + identifier, id)
         }
-
-        public void add(String identifier, T id) {
-            client.add(ID_MAPPING_PREFIX + identifier, id)
-        }
-
-    }
 
     enum ElementType {VERTEX, PROPERTY, EDGE}
 
