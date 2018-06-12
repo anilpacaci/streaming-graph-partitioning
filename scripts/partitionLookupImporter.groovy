@@ -46,7 +46,7 @@ class PartitionLookupImporter {
         Configuration configuration = new PropertiesConfiguration(configurationFile);
 
         String lookupFile = configuration.getString("partition.lookup")
-	String[] servers = configuration.getStringArray("memcached.address")
+	    String[] servers = configuration.getStringArray("memcached.address")
         partitionMappingServer = new PartitionMapping(servers)
         int batchSize = configuration.getInt("batch.size")
 
