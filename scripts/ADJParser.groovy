@@ -372,18 +372,24 @@ class ADJParser {
 
             PropertyKey iid = mgmt.getPropertyKey("iid");
             mgmt.buildIndex("byIid", Vertex.class).addKey(iid).buildCompositeIndex();
-            mgmt.awaitGraphIndexStatus(janusGraph, "byIid").call();
+        }
+        mgmt.commit();
 
             mgmt = (ManagementSystem) janusGraph.openManagement();
             mgmt.updateIndex(mgmt.getGraphIndex("byIid"), SchemaAction.REINDEX)
                 .get();
-        }
         mgmt.commit();
+
 
         mgmt = (ManagementSystem) janusGraph.openManagement();
         if (mgmt.getGraphIndex("byIidLong") == null) {
             mgmt.makePropertyKey("iid_long").dataType(Long.class)
                         .cardinality(Cardinality.SINGLE).make();
+
+            PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
+            mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
+        }
+        mgmt.commit();
 
             PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
             mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
