@@ -41,6 +41,9 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
+import java.util.Timer
+import java.util.TimerTask
+
 /**
  * This is a Groovy Script to run inside gremlin console, for loading SNAP ADJ formatted data into Tinkerpop Competible Graph.
  * original written by Jonathan Ellithorpe <jde@cs.stanford.edu> <a href="https://github.com/PlatformLab/ldbc-snb-impls/blob/master/snb-interactive-titan/src/main/java/net/ellitron/ldbcsnbimpls/interactive/titan/TitanGraphLoader.java">TitanGraphLoader </>
@@ -49,11 +52,9 @@ import java.util.concurrent.atomic.AtomicLong
  */
 class ADJParser {
 
-    static TX_MAX_RETRIES = 1000
+    static int TX_MAX_RETRIES = 1000
 
-    enum ElementType {
-        VERTEX, PROPERTY, EDGE
-    }
+    enum ElementType { VERTEX, PROPERTY, EDGE }
 
     static class SharedGraphReader {
 
@@ -185,7 +186,7 @@ class ADJParser {
                                 Map<Object, Object> propertiesMap = new HashMap<>();
 
                                 String identifier = colVals[0];
-                                propertiesMap.put("iid", entityName + identifier);
+                                propertiesMap.put("iid", entityName + ":" + identifier);
                                 propertiesMap.put("iid_long", Long.parseLong(identifier))
 
                                 propertiesMap.put(T.label, entityName);
@@ -207,11 +208,11 @@ class ADJParser {
                                 Long degree = Long.parseLong(colVals[1])
                                 List<Vertex> neighbours = new ArrayList<>();
 
-                                Long id1 = idMapping.get(entityName + ":" + colVals[0])
+                                Long id1 = idMapping.get(colVals[0])
                                 source = g.V(id1).next()
 
                                 for (int j = 0; j < degree; j++) {
-                                    Long id2 = idMapping.get(entityName + ":" + colVals[j + 2])
+                                    Long id2 = idMapping.get(colVals[j + 2])
                                     vertex2 = g.V(id2).next()
                                     neighbours.add(vertex2)
                                 }
@@ -256,7 +257,7 @@ class ADJParser {
         Configuration configuration = new PropertiesConfiguration(configurationFile);
 
         //import partition lookup
-        partitionLookupImport(configuration)
+        //partitionLookupImport(configuration)
 
         // WARN, we use the same file for nodes and edges, for nodes we simply rely on first vertex id on each line
         String inputAdjFile = configuration.getString("input.base")
@@ -362,7 +363,9 @@ class ADJParser {
         if (mgmt.getGraphIndex("byIid") == null) {
             mgmt.makePropertyKey("iid").dataType(String.class)
                     .cardinality(Cardinality.SINGLE).make();
+	mgmt.commit()
 
+	mgmt = (ManagementSystem) janusGraph.openManagement();
             PropertyKey iid = mgmt.getPropertyKey("iid");
             mgmt.buildIndex("byIid", Vertex.class).addKey(iid).buildCompositeIndex();
             mgmt.awaitGraphIndexStatus(janusGraph, "byIid").call();
@@ -376,8 +379,9 @@ class ADJParser {
         if (mgmt.getGraphIndex("byIidLong") == null) {
             mgmt.makePropertyKey("iid_long").dataType(Long.class)
                     .cardinality(Cardinality.SINGLE).make();
+	mgmt.commit()
 
-
+        mgmt = (ManagementSystem) janusGraph.openManagement();
             PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
             mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
             mgmt.awaitGraphIndexStatus(janusGraph, "byIidLong").call();
