@@ -257,7 +257,7 @@ class ADJParser {
         Configuration configuration = new PropertiesConfiguration(configurationFile);
 
         //import partition lookup
-        //partitionLookupImport(configuration)
+        partitionLookupImport(configuration)
 
         // WARN, we use the same file for nodes and edges, for nodes we simply rely on first vertex id on each line
         String inputAdjFile = configuration.getString("input.base")
@@ -361,11 +361,10 @@ class ADJParser {
         // indexing iid and id_long properties
         mgmt = (ManagementSystem) janusGraph.openManagement();
         if (mgmt.getGraphIndex("byIid") == null) {
-            mgmt.makePropertyKey("iid").dataType(String.class)
-                    .cardinality(Cardinality.SINGLE).make();
-	mgmt.commit()
+            mgmt.makePropertyKey("iid").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+            mgmt.commit()
 
-	mgmt = (ManagementSystem) janusGraph.openManagement();
+            mgmt = (ManagementSystem) janusGraph.openManagement();
             PropertyKey iid = mgmt.getPropertyKey("iid");
             mgmt.buildIndex("byIid", Vertex.class).addKey(iid).buildCompositeIndex();
             mgmt.awaitGraphIndexStatus(janusGraph, "byIid").call();
@@ -373,20 +372,17 @@ class ADJParser {
         }
 
         mgmt.commit();
-
-
         mgmt = (ManagementSystem) janusGraph.openManagement();
+
         if (mgmt.getGraphIndex("byIidLong") == null) {
-            mgmt.makePropertyKey("iid_long").dataType(Long.class)
-                    .cardinality(Cardinality.SINGLE).make();
-	mgmt.commit()
+            mgmt.makePropertyKey("iid_long").dataType(Long.class).cardinality(Cardinality.SINGLE).make();
+	        mgmt.commit()
 
-        mgmt = (ManagementSystem) janusGraph.openManagement();
+            mgmt = (ManagementSystem) janusGraph.openManagement();
             PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
             mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
             mgmt.awaitGraphIndexStatus(janusGraph, "byIidLong").call();
-            mgmt.updateIndex(mgmt.getGraphIndex("byIidLong"), SchemaAction.REINDEX)
-                    .get();
+            mgmt.updateIndex(mgmt.getGraphIndex("byIidLong"), SchemaAction.REINDEX).get();
         }
         mgmt.commit();
 
