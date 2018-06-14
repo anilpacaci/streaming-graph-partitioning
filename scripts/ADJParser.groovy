@@ -141,9 +141,9 @@ class ADJParser {
         SharedGraphReader graphReader
         ElementType elementType
         AtomicLong counter
-        Map<String, Long> idMapping
+        MemcachedMap<String, Long> idMapping
 
-        GraphLoader(JanusGraph graph, SharedGraphReader graphReader, ElementType elementType, Map<String, Long> idMapping) {
+        GraphLoader(JanusGraph graph, SharedGraphReader graphReader, ElementType elementType, MemcachedMap<String, Long> idMapping) {
             this.graph = graph
             this.graphReader = graphReader
             this.elementType = elementType
@@ -213,7 +213,7 @@ class ADJParser {
 
                                 for (int j = 0; j < degree; j++) {
                                     Long id2 = idMapping.get(colVals[j + 2])
-                                    vertex2 = g.V(id2).next()
+                                    Vertex vertex2 = g.V(id2).next()
                                     neighbours.add(vertex2)
                                 }
 
@@ -266,7 +266,8 @@ class ADJParser {
         int batchSize = configuration.getInt("batch.size")
         int progReportPeriod = configuration.getInt("reporting.period")
 
-        Map<String, Long> idMapping = new HashMap<String, Long>()
+        String[] servers = configuration.getStringArray("memcached.address")
+        MemcachedMap<String, Long> idMapping = new MemcachedMap<String, Long>("id-mapping", servers);
 
         ExecutorService executor = Executors.newFixedThreadPool(threadCount)
 
@@ -300,9 +301,11 @@ class ADJParser {
     }
 
     static void partitionLookupImport(Configuration configuration) {
+        String entityPrefix = "person:";
+
         String lookupFile = configuration.getString("partition.lookup")
         String[] servers = configuration.getStringArray("memcached.address")
-        PartitionMapping<Integer> partitionMappingServer = new PartitionMapping<Integer>("partition-lookup", servers)
+        MemcachedMap<String, Integer> partitionMappingServer = new MemcachedMap<String, Integer>("partition-lookup", servers)
         int batchSize = configuration.getInt("batch.size")
 
         try {
@@ -314,7 +317,7 @@ class ADJParser {
                 String id = parts[0]
                 Integer partition = Integer.valueOf(parts[1])
 
-                partitionMappingServer.set(id, partition)
+                partitionMappingServer.set(entityPrefix + id, partition)
                 counter++
 
                 if (counter % batchSize == 0) {
@@ -360,40 +363,47 @@ class ADJParser {
 
         // indexing iid and id_long properties
         mgmt = (ManagementSystem) janusGraph.openManagement();
-        if (mgmt.getGraphIndex("byIid") == null) {
-            mgmt.makePropertyKey("iid").dataType(String.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.commit()
-
-            mgmt = (ManagementSystem) janusGraph.openManagement();
-            PropertyKey iid = mgmt.getPropertyKey("iid");
-            mgmt.buildIndex("byIid", Vertex.class).addKey(iid).buildCompositeIndex();
-            mgmt.awaitGraphIndexStatus(janusGraph, "byIid").call();
-            mgmt.updateIndex(mgmt.getGraphIndex("byIid"), SchemaAction.REINDEX).get();
-        }
-
+        mgmt.makePropertyKey("iid").dataType(String.class)
+                .cardinality(Cardinality.SINGLE).make();
         mgmt.commit();
+
         mgmt = (ManagementSystem) janusGraph.openManagement();
+        PropertyKey iid = mgmt.getPropertyKey("iid");
+        mgmt.buildIndex("byIid", Vertex.class).addKey(iid).buildCompositeIndex();
+        mgmt.commit();
 
-        if (mgmt.getGraphIndex("byIidLong") == null) {
-            mgmt.makePropertyKey("iid_long").dataType(Long.class).cardinality(Cardinality.SINGLE).make();
-	        mgmt.commit()
+        mgmt.awaitGraphIndexStatus(janusGraph, "byIid").call();
 
-            mgmt = (ManagementSystem) janusGraph.openManagement();
-            PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
-            mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
-            mgmt.awaitGraphIndexStatus(janusGraph, "byIidLong").call();
-            mgmt.updateIndex(mgmt.getGraphIndex("byIidLong"), SchemaAction.REINDEX).get();
-        }
+        mgmt = (ManagementSystem) janusGraph.openManagement();
+        mgmt.updateIndex(mgmt.getGraphIndex("byIid"), SchemaAction.REINDEX)
+                .get();
+        mgmt.commit();
+
+
+        mgmt = (ManagementSystem) janusGraph.openManagement();
+        mgmt.makePropertyKey("iid_long").dataType(Long.class)
+                .cardinality(Cardinality.SINGLE).make();
+        mgmt.commit();
+
+        mgmt = (ManagementSystem) janusGraph.openManagement();
+        PropertyKey iid_long = mgmt.getPropertyKey("iid_long");
+        mgmt.buildIndex("byIidLong", Vertex.class).addKey(iid_long).buildCompositeIndex();
+        mgmt.commit();
+
+        mgmt.awaitGraphIndexStatus(janusGraph, "byIidLong").call();
+
+        mgmt = (ManagementSystem) janusGraph.openManagement();
+        mgmt.updateIndex(mgmt.getGraphIndex("byIidLong"), SchemaAction.REINDEX)
+                .get();
         mgmt.commit();
 
         System.out.println("Indices are created")
     }
 
-    static class PartitionMapping<T> {
+    static class MemcachedMap<E, T> {
         private MemCachedClient client;
-        private String entityPrefix = "person:";
 
-        public PartitionMapping(String instanceName, String... servers) {
+        public MemcachedMap(String instanceName, String... servers) {
             SockIOPool pool = SockIOPool.getInstance(instanceName);
             pool.setServers(servers);
             pool.setFailover(true);
@@ -410,8 +420,15 @@ class ADJParser {
             // client.flushAll();
         }
 
-        public void set(String identifier, T id) {
-            client.set(entityPrefix + identifier, id)
+        public void set(E identifier, T id) {
+            client.set(identifier, id)
+        }
+
+        public T get(E identifier) {
+            Object value = client.get(identifier);
+            if (value == null)
+                return null;
+            return (T) value;
         }
     }
 }
