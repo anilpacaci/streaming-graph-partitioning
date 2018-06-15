@@ -200,7 +200,7 @@ class ADJParser {
                                 Vertex vertex = graph.addVertex(keyValues.toArray());
 
                                 Long id = (Long) vertex.id()
-                                idMapping.put(identifier, id)
+                                idMapping.set(identifier, id)
 
                             } else {
                                 GraphTraversalSource g = graph.traversal();
@@ -430,5 +430,20 @@ class ADJParser {
                 return null;
             return (T) value;
         }
+
+		public HashMap<E,T> getMulti(E[] identifiers) {
+			HashMap<E,Object> values = (HashMap<E,Object>) client.getMulti(identifiers);
+			HashMap<E,T> results = new HashMap<E,T>();
+			
+			for(Map.Entry<E, Object> e: results.entrySet()) {
+				Object value = e.getValue();
+				if(value == null) {
+					results.put(e.getKey(), null)
+				} else {
+					results.put(e.getKey(), (T)value);
+				}
+			}
+			return results;
+		}
     }
 }
