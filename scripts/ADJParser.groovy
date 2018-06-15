@@ -167,6 +167,7 @@ class ADJParser {
 
             boolean txSucceeded;
             long txFailCount;
+            long currentBatchSize
 
             while (graphReader.hasNext()) {
                 List<String> lines = graphReader.next()
@@ -222,6 +223,17 @@ class ADJParser {
 
                                 for (Vertex neighbour : neighbours) {
                                     source.addEdge(edgeLabel, neighbour, keyValues.toArray());
+                                    currentBatchSize++
+
+                                    if(currentBatchSize >= 100000) {
+                                        try {
+                                            graph.tx().commit()
+                                        } catch ( Exception e) {
+                                            println(String.format("Insert failed on file: %s, index: %s, reason: ", graphReader.getFileName(), i, e.printStackTrace()))
+                                        } finally {
+                                            currentBatchSize = 0
+                                        }
+                                    }
                                 }
                             }
 
