@@ -23,6 +23,7 @@ import org.apache.commons.configuration.PropertiesConfiguration
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.LineIterator
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal
 import org.apache.tinkerpop.gremlin.structure.T
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.janusgraph.core.Cardinality
@@ -151,6 +152,24 @@ class ADJParser {
             this.idMapping = idMapping
         }
 
+        Vertex addVertex(String identifier) {
+            Map<Object, Object> propertiesMap = new HashMap<>();
+            propertiesMap.put("iid", entityName + ":" + identifier);
+            propertiesMap.put("iid_long", Long.parseLong(identifier))
+
+            propertiesMap.put(T.label, entityName);
+
+            List<Object> keyValues = new ArrayList<>();
+            propertiesMap.forEach { key, val ->
+                keyValues.add(key);
+                keyValues.add(val);
+            }
+
+            Vertex vertex = graph.addVertex(keyValues.toArray());
+
+            return vertex;
+        }
+
         @Override
         Object call() {
             SimpleDateFormat birthdayDateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -184,37 +203,40 @@ class ADJParser {
                             String[] colVals = line.split("\\s");
 
                             if (elementType == ElementType.VERTEX) {
-                                Map<Object, Object> propertiesMap = new HashMap<>();
+
 
                                 String identifier = colVals[0];
-                                propertiesMap.put("iid", entityName + ":" + identifier);
-                                propertiesMap.put("iid_long", Long.parseLong(identifier))
-
-                                propertiesMap.put(T.label, entityName);
-
-                                List<Object> keyValues = new ArrayList<>();
-                                propertiesMap.forEach { key, val ->
-                                    keyValues.add(key);
-                                    keyValues.add(val);
-                                }
-
-                                Vertex vertex = graph.addVertex(keyValues.toArray());
+                                Vertex vertex = addVertex(identifier)
 
                                 Long id = (Long) vertex.id()
                                 idMapping.set(identifier, id)
 
                             } else {
                                 GraphTraversalSource g = graph.traversal();
+                                DefaultGraphTraversal t;
                                 Vertex source;
                                 Long degree = Long.parseLong(colVals[1])
                                 List<Vertex> neighbours = new ArrayList<>();
 
                                 Long id1 = idMapping.get(colVals[0])
-                                source = g.V(id1).next()
+                                t = g.V(id1)
+                                if(t.count() == 0) {
+                                    source = addVertex(Long.toString(id1))
+                                } else {
+                                    source = g.V(id1).next()
+                                }
 
                                 for (int j = 0; j < degree; j++) {
                                     Long id2 = idMapping.get(colVals[j + 2])
-                                    Vertex vertex2 = g.V(id2).next()
+                                    Vertex vertex2
+
+                                    t = g.V(id2)
+                                    if(t.count() == 0) {
+                                        vertex2 = addVertex(Long.toString(id2))
+                                    } else {
+                                        vertex2 = g.V(id2).next()
+                                    }
+                                    
                                     neighbours.add(vertex2)
                                 }
 
