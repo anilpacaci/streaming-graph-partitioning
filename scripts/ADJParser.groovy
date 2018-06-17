@@ -153,6 +153,7 @@ class ADJParser {
         }
 
         Vertex addVertex(String identifier) {
+			String entityName = "person"
             Map<Object, Object> propertiesMap = new HashMap<>();
             propertiesMap.put("iid", entityName + ":" + identifier);
             propertiesMap.put("iid_long", Long.parseLong(identifier))
@@ -227,12 +228,14 @@ class ADJParser {
                                 }
 
                                 for (int j = 0; j < degree; j++) {
-                                    Long id2 = idMapping.get(colVals[j + 2])
+									String identifier2 = colVals[j+2]
+                                    Long id2 = idMapping.get(identifier2)
                                     Vertex vertex2
 
-                                    t = g.V(id2)
-                                    if(t.count() == 0) {
-                                        vertex2 = addVertex(Long.toString(id2))
+                                    if(id2 == null) {
+                                        vertex2 = addVertex(identifier2)
+										Long id = (Long) vertex2.id()
+                                		idMapping.set(identifier2, id)
                                     } else {
                                         vertex2 = g.V(id2).next()
                                     }
@@ -251,7 +254,7 @@ class ADJParser {
                                         try {
                                             graph.tx().commit()
                                         } catch ( Exception e) {
-                                            println(String.format("Insert failed on file: %s, index: %s, reason: ", graphReader.getFileName(), i, e.printStackTrace()))
+                                            println(String.format("Edge insert failed on file: %s, index: %s, reason: ", graphReader.getFileName(), i, e.printStackTrace()))
                                         } finally {
                                             currentBatchSize = 0
                                         }
@@ -291,7 +294,7 @@ class ADJParser {
         Configuration configuration = new PropertiesConfiguration(configurationFile);
 
         //import partition lookup
-        partitionLookupImport(configuration)
+        //partitionLookupImport(configuration)
 
         // WARN, we use the same file for nodes and edges, for nodes we simply rely on first vertex id on each line
         String inputAdjFile = configuration.getString("input.base")
