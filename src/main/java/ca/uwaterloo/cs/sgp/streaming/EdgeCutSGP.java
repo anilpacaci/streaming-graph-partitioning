@@ -96,10 +96,10 @@ public class EdgeCutSGP {
                 Iterator<Map.Entry<String, Integer>> it = algorithm.getPartitionMap().entrySet().iterator();
                 while(it.hasNext()) {
                     Map.Entry<String, Integer> entry = it.next();
-                    writer.println(entry.getKey() + "," + entry.getValue());
+                    writer.println(entry.getKey() + " " + entry.getValue());
                 }
                 writer.close();
-                System.out.println("Edgecut for " + algorithm.getName() + "\t:" + algorithm.getEdgeCut());
+                System.out.println("Edgecut for " + algorithm.getName() + "\t:" + algorithm.getEdgeCut() );
 
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

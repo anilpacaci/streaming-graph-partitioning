@@ -23,7 +23,7 @@ public class ADJParser implements LineParser {
     public List<String> getOutEdges(String line) {
         String[] splitLine = line.split(REGEXP_VERTEX_SEPERATOR, -1);
         if(splitLine.length >= 3 && !splitLine[2].isEmpty()) {
-            return Arrays.asList(splitLine[2].split(REGEXP_EDGE_SEPERATOR));
+            return Arrays.asList(splitLine).subList(2, splitLine.length);
         } else {
             return new ArrayList<>();
         }
