@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.lang.*;
 import java.io.FileNotFoundException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class EdgeCutSGP {
 
@@ -25,6 +26,7 @@ public class EdgeCutSGP {
     LineParser lineParser;
 
     LineIterator lineIterator;
+    Timer timer;
 
     // Constructor of the LDG class, it creates the graph, set up the
     // neighbor relationships for each vertex, calculate the capacity
@@ -45,28 +47,42 @@ public class EdgeCutSGP {
 
 
     public void streamingPartition( boolean undirect){
-        int counter = 0;
-            //loop through all lines in the file
-            while(lineIterator.hasNext()){
-                String next = lineIterator.next();
-                //split each line by whitespace
-                if(next.startsWith("#")) continue; // skip first line
-                String vertexIdentifier = lineParser.getSource(next);
-                List<String> outgoingEdges = lineParser.getOutEdges(next);
-                List<String> incomingEdges = lineParser.getInEdges(next);
-                Integer degree = lineParser.getDegree(next);
+        AtomicInteger counter = new AtomicInteger(0);
+        AtomicInteger minutes = new AtomicInteger(0);
 
-                List<String> adjacencyList = outgoingEdges;
-
-                if(undirect) {
-                    // combine all edges for undirected graphs
-                    adjacencyList.addAll(incomingEdges);
-                }
-
-                for(SGPAlgorithm algorithm : algorithms) {
-                    algorithm.partitionVertex(vertexIdentifier, adjacencyList);
-                }
+        // start reporter
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                // set to zero after reporting
+                int currentCount = counter.getAndSet(0);
+                System.out.println(String.format("Second: %d\t- Throughput: %d", minutes.addAndGet(1), currentCount));
             }
+        }, 0, 60 * 1000);
+
+        //loop through all lines in the file
+        while(lineIterator.hasNext()){
+            String next = lineIterator.next();
+            //split each line by whitespace
+            if(next.startsWith("#")) continue; // skip first line
+            String vertexIdentifier = lineParser.getSource(next);
+            List<String> outgoingEdges = lineParser.getOutEdges(next);
+            List<String> incomingEdges = lineParser.getInEdges(next);
+            Integer degree = lineParser.getDegree(next);
+
+            List<String> adjacencyList = outgoingEdges;
+
+            if(undirect) {
+                // combine all edges for undirected graphs
+                adjacencyList.addAll(incomingEdges);
+            }
+
+            for(SGPAlgorithm algorithm : algorithms) {
+                algorithm.partitionVertex(vertexIdentifier, adjacencyList);
+            }
+        }
+
+        timer.cancel();
 
     }
     public void finalize(String outputFile){
