@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.Timer
 import java.util.TimerTask
@@ -142,9 +143,9 @@ class ADJParser {
         SharedGraphReader graphReader
         ElementType elementType
         AtomicLong counter
-        MemcachedMap<String, Long> idMapping
+        ConcurrentHashMap<String, Long> idMapping
 
-        GraphLoader(JanusGraph graph, SharedGraphReader graphReader, ElementType elementType, MemcachedMap<String, Long> idMapping) {
+        GraphLoader(JanusGraph graph, SharedGraphReader graphReader, ElementType elementType, Map<String, Long> idMapping) {
             this.graph = graph
             this.graphReader = graphReader
             this.elementType = elementType
@@ -210,7 +211,7 @@ class ADJParser {
                                 Vertex vertex = addVertex(identifier)
 
                                 Long id = (Long) vertex.id()
-                                idMapping.set(identifier, id)
+                                idMapping.put(identifier, id)
 
                             } else {
                                 GraphTraversalSource g = graph.traversal();
@@ -235,7 +236,7 @@ class ADJParser {
                                     if(id2 == null) {
                                         vertex2 = addVertex(identifier2)
 										Long id = (Long) vertex2.id()
-                                		idMapping.set(identifier2, id)
+                                		idMapping.put(identifier2, id)
                                     } else {
                                         vertex2 = g.V(id2).next()
                                     }
@@ -304,7 +305,7 @@ class ADJParser {
         int progReportPeriod = configuration.getInt("reporting.period")
 
         String[] servers = configuration.getStringArray("memcached.address")
-        MemcachedMap<String, Long> idMapping = new MemcachedMap<String, Long>("id-mapping", servers);
+        ConcurrentHashMap<String, Long> idMapping = new ConcurrentHashMap<String, Long>();
 
         ExecutorService executor = Executors.newFixedThreadPool(threadCount)
 
