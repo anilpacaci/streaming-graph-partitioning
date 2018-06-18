@@ -43,7 +43,8 @@ public class EdgeCutSGP {
         }
         this.algorithms = algorithms;
         this.lineParser = lineParser;
-    }
+ 		this.timer = new Timer();
+   }
 
 
     public void streamingPartition( boolean undirect){
@@ -56,7 +57,7 @@ public class EdgeCutSGP {
             public void run() {
                 // set to zero after reporting
                 int currentCount = counter.getAndSet(0);
-                System.out.println(String.format("Second: %d\t- Throughput: %d", minutes.addAndGet(1), currentCount));
+                System.out.println(String.format("Second: %d\t- Throughput: %d", minutes.incrementAndGet(), currentCount));
             }
         }, 0, 60 * 1000);
 
@@ -80,6 +81,7 @@ public class EdgeCutSGP {
             for(SGPAlgorithm algorithm : algorithms) {
                 algorithm.partitionVertex(vertexIdentifier, adjacencyList);
             }
+			counter.incrementAndGet();
         }
 
         timer.cancel();
