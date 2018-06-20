@@ -295,7 +295,7 @@ class ADJParser {
         Configuration configuration = new PropertiesConfiguration(configurationFile);
 
         //import partition lookup
-        //partitionLookupImport(configuration)
+        partitionLookupImport(configuration)
 
         // WARN, we use the same file for nodes and edges, for nodes we simply rely on first vertex id on each line
         String inputAdjFile = configuration.getString("input.base")
@@ -341,32 +341,53 @@ class ADJParser {
     static void partitionLookupImport(Configuration configuration) {
         String entityPrefix = "person:";
 
-        String lookupFile = configuration.getString("partition.lookup")
+        File lookupFile = FileUtils.getFile(configuration.getString("partition.lookup"))
         String[] servers = configuration.getStringArray("memcached.address")
         MemcachedMap<String, Integer> partitionMappingServer = new MemcachedMap<String, Integer>("partition-lookup", servers)
         int batchSize = configuration.getInt("batch.size")
+        int threadCount = configuration.getInt("thread.count")
 
-        try {
-            LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile), "UTF-8")
-            System.out.println("Start processing partition lookup file: " + lookupFile)
-            long counter = 0
-            while (it.hasNext()) {
-                String[] parts = it.nextLine().split("\\s")
-                String id = parts[0]
-                Integer partition = Integer.valueOf(parts[1])
+        AtomicLong counter = new AtomicLong(0)
 
-                partitionMappingServer.set(entityPrefix + id, partition)
-                counter++
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount)
 
-                if (counter % batchSize == 0) {
-                    System.out.println("Imported: " + counter)
-                }
-            }
-            System.out.println("# of keys: " + counter)
-        } catch (Exception e) {
-            System.out.println("Exception: " + e);
-            e.printStackTrace();
+        List<String> partitionFiles = new ArrayList<>()
+        if(lookupFile.isFile()) {
+            partitionFiles.add(lookupFile.toString())
+        } else {
+            partitionFiles.addAll(Arrays.asList(lookupFile.list()))
         }
+
+        List<Callable> partitionImporters = new ArrayList<>();
+
+        for(String partitionFile : partitionFiles) {
+            partitionImporters.add(new Callable() {
+                @Override
+                Object call() throws Exception {
+                    try {
+                        LineIterator it = FileUtils.lineIterator(FileUtils.getFile(partitionFile), "UTF-8")
+                        System.out.println("Start processing partition lookup file: " + lookupFile)
+                        while (it.hasNext()) {
+                            String[] parts = it.nextLine().split("\\s")
+                            String id = parts[0]
+                            Integer partition = Integer.valueOf(parts[1])
+
+                            partitionMappingServer.set(entityPrefix + id, partition)
+
+
+                            if (counter.incrementAndGet() % batchSize == 0) {
+                                System.out.println("Imported: " + counter.get())
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Exception: " + e);
+                        e.printStackTrace();
+                    }
+                }
+            })
+        }
+
+        executor.invokeAll(partitionImporters)
     }
 
     /**
