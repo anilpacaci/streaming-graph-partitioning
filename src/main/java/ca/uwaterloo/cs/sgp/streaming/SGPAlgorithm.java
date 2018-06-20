@@ -1,5 +1,6 @@
 package ca.uwaterloo.cs.sgp.streaming;
 
+import javax.rmi.CORBA.Tie;
 import java.util.*;
 
 /**
@@ -16,6 +17,8 @@ public abstract class SGPAlgorithm {
 
     protected HashMap<String, Integer> vertexToPartition;
     protected Long numberOfEdgeCut = 0L;
+
+    protected Random rand = new Random();
 
     abstract void partitionVertex(String sourceId, List<String> adjacencyList);
 
@@ -92,9 +95,14 @@ public abstract class SGPAlgorithm {
                     TieBreaker.add(i);
                 }
             }
-            Random rand = new Random();
-            int value = rand.nextInt(TieBreaker.size());
-            argmax = TieBreaker.get(value);
+
+            if(TieBreaker.isEmpty()) {
+                argmax = rand.nextInt(this.numberOfPartition);
+            } else {
+                int value = rand.nextInt(TieBreaker.size());
+                argmax = TieBreaker.get(value);
+            }
+
 
             // compute the edge cut
             for(int i = 0 ; i < this.numberOfPartition ; i++) {
@@ -155,9 +163,13 @@ public abstract class SGPAlgorithm {
                     TieBreaker.add(i);
                 }
             }
-            Random rand = new Random();
-            int value = rand.nextInt(TieBreaker.size());
-            argmax = TieBreaker.get(value);
+
+            if(TieBreaker.isEmpty()) {
+                argmax = rand.nextInt(this.numberOfPartition);
+            } else {
+                int value = rand.nextInt(TieBreaker.size());
+                argmax = TieBreaker.get(value);
+            }
 
             // compute the edge cut
             for(int i = 0 ; i < this.numberOfPartition ; i++) {
@@ -197,11 +209,9 @@ public abstract class SGPAlgorithm {
 
             LinkedList<Integer> TieBreaker = new LinkedList<Integer>();
             for(int i = 0; i < this.numberOfPartition; i++){
-                numberOfNeighbours[i] = neighbors_in_partition(i, adjacencyList);
                 TieBreaker.add(i);
             }
 
-            Random rand = new Random();
             int value = rand.nextInt(TieBreaker.size());
             argmax = TieBreaker.get(value);
 
