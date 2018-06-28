@@ -343,7 +343,6 @@ class ADJParser {
 
         File lookupFile = FileUtils.getFile(configuration.getString("partition.lookup"))
         String[] servers = configuration.getStringArray("memcached.address")
-        MemcachedMap<String, Integer> partitionMappingServer = new MemcachedMap<String, Integer>("partition-lookup", servers)
         int batchSize = configuration.getInt("batch.size")
         int threadCount = configuration.getInt("thread.count")
 
@@ -365,8 +364,9 @@ class ADJParser {
                 @Override
                 Object call() throws Exception {
                     try {
-                        LineIterator it = FileUtils.lineIterator(FileUtils.getFile(partitionFile), "UTF-8")
-                        System.out.println("Start processing partition lookup file: " + lookupFile)
+						MemcachedMap<String, Integer> partitionMappingServer = new MemcachedMap<String, Integer>("partition-lookup", servers)
+                        LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile.toString(), partitionFile), "UTF-8")
+                        System.out.println("Start processing partition lookup file: " + partitionFile)
                         while (it.hasNext()) {
                             String[] parts = it.nextLine().split("\\s")
                             String id = parts[0]
