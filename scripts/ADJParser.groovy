@@ -338,6 +338,12 @@ class ADJParser {
         }
     }
 
+
+	static void partitionLookupImport(String configurationFile) {
+		Configuration configuration = new PropertiesConfiguration(configurationFile);
+		partitionLookupImport(configuration);
+	}
+
     static void partitionLookupImport(Configuration configuration) {
         String entityPrefix = "person:";
 
