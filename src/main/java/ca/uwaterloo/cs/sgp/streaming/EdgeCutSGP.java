@@ -139,7 +139,7 @@ public class EdgeCutSGP {
 
         LineParser lineParser;
         if(parser.toLowerCase().equals("snb")) {
-            lineParser = new SNBParser();
+            lineParser = new SNBParser(edgeLabels);
         } else {
             lineParser = new ADJParser();
         }
