@@ -1,0 +1,32 @@
+version: "3"
+services:
+
+  powerlyra-worker:
+    image: 127.0.0.1:5000/powerlyra
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.role == worker
+    networks:
+      mpinetwork:
+        aliases:
+          - '{{.Service.Name}}-{{.Task.Slot}}'
+  powerlyra-master:
+    image: 127.0.0.1:5000/powerlyra
+    volumes:
+      - sgp-data:/sgp/datasets/
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    networks:
+      - mpinetwork
+
+networks:
+  mpinetwork:
+    driver: overlay
+
+volumes:
+  sgp-data:

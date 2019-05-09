@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Include the variables that store the Docker service names
+# shellcheck disable=SC1091
+
+( dig +nocmd +nocomments +noquestion +nostats "tasks.powerlyra-worker"|\
+  awk '{print $5}' ) | sort -u
