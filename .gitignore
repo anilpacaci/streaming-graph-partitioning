@@ -9,4 +9,7 @@ target/
 .idea/
 .settings/
 
+#OSX related files
+.DS_Store
+
 
