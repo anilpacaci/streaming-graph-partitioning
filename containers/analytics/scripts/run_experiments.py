@@ -7,6 +7,10 @@ import sys
 
 from log_parser import aggregate_logs
 
+# volumes defined in the docker compose file
+dataset_volume = "/sgp/datasets/"
+result_volume = "/sgp/results/"
+
 edge_cut_sgp = ["random_ec", "ldg", "fennel", "metis"]
 vertex_cut_sgp = ["random", "dbh", "grid", "hdrf", "hybrid", "hybrid_ginger"]
 
@@ -114,8 +118,8 @@ with open(parameters, 'rb') as parameters_file:
 	run_config = parameters_json["runs"]
 	
 	## read global parameters from the json file
-	snap_dataset = run_config["snap-dataset"]
-	adj_dataset  = run_config["adj-dataset"]
+	snap_dataset = os.path.join(dataset_volume, run_config["snap-dataset"])
+	adj_dataset  = os.path.join(dataset_volume, run_config["adj-dataset"])
 	log_folder = run_config["log-folder"]
 	aggregated_results_file = run_config["result-file"]
 	nverts = run_config["nvertices"]
@@ -144,5 +148,9 @@ with open(parameters, 'rb') as parameters_file:
 	print "All runs are completed"
 
 	print "!!! Calling log aggregater on {}".format(log_folder)
+
+	aggregate_logs(log_folder, aggregated_results_file)
+
+	print "!!! END"
 
 
