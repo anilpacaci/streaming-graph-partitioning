@@ -1,0 +1,35 @@
+{
+	"runs" : {
+		"snap-dataset" : "dataset/in/snap",
+		"adj-dataset" : "dataset/in/adf",
+		"log-folder" : "log/folder",
+		"result-folder" : "result/folder",
+		"nedges" : "500",
+		"nvertices" : "10000",
+		"worker-per-node" : 1,
+		"workers" : [4,8],
+		"ingress" : [
+			{"name" : "dbh"},
+			{
+				"name" : "metis",
+				"lookup": {
+					"4" : "metis4lookup",
+					"8" : "metis8lookup"
+				}
+			}
+		],
+		"algorithm" : [
+			{
+				"name" : "pagerank",
+				"iterations" : 20
+			},
+			{
+				"name" : "sssp",
+				"source": 6257722
+			}
+		]
+	},
+	"results" : {
+
+	}
+}
