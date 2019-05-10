@@ -2,14 +2,18 @@
 
 PROJECT_NAME="powerlyra"
 
-MASTER_SERVICE_NAME="powerlyra-master"
-WORKER_SERVICE_NAME="powerlyra-worker"
+PL_MASTER_NAME="powerlyra-master"
+PL_WORKER_NAME="powerlyra-worker"
+
+MASTER_SERVICE_NAME="${PROJECT_NAME}"_"${PL_MASTER_NAME}"
+WORKER_SERVICE_NAME="${PROJECT_NAME}"_"${PL_WORKER_NAME}"
 
 NETWORK_NAME="powerlyra-network"
 
 IMAGE_TAG="127.0.0.1:5000/powerlyra"
 
 IMAGE_FILE="../../containers/analytics"
+SERVICE_COMPOSE_FILE="../../containers/analytics/docker-compose.yml"
 
 SWARM_MANAGER_IP="192.168.152.51"
 
@@ -54,8 +58,8 @@ build_and_push_image ()
     docker build -t ${IMAGE_TAG} ${IMAGE_FILE}
 
     printf "\\n\\n===> START REGISTRY"
-	echo "$ docker service create --name registry --publish 5000:5000 registry:2"
-	docker service create --name registry --publish 5000:5000 registry:2
+	echo "$ docker service create --name registry --constraint 'node.role == manager' --publish 5000:5000 registry:2"
+	docker service create --name registry --constraint 'node.role == manager' --publish 5000:5000 registry:2
 	
     printf "\\n\\n===> PUSH IMAGE TO REGISTRY"
     echo "$ docker push \"${IMAGE_TAG}\""
@@ -99,4 +103,25 @@ destroy_swarm()
     docker swarm leave -f
 }
 
-destroy_swarm
+start_service()
+{
+	printf "\\n\\n===> START POWERLYRA SERVICE \\n"
+
+	echo "$ docker stack deploy -c \"${SERVICE_COMPOSE_FILE}\" \"${PROJECT_NAME}\" "
+	printf "\\n"
+	docker stack deploy -c ${SERVICE_COMPOSE_FILE} ${PROJECT_NAME}
+}
+
+stop_service()
+{
+    printf "\\n\\n===> STOP POWERLYRA SERVICE \\n"
+
+    echo "$ docker service rm \"${WORKER_SERVICE_NAME}\" "
+    printf "\\n"
+    docker service rm ${WORKER_SERVICE_NAME}
+
+	echo "$ docker service rm \"${MASTER_SERVICE_NAME}\" "
+    printf "\\n"
+    docker service rm ${MASTER_SERVICE_NAME}
+}
+

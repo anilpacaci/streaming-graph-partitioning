@@ -16,6 +16,7 @@ RUN apt-get update &&\
 
 # copy powerlyra codebase
 COPY powerlyra/ /sgp/powerlyra/
+COPY scripts/ /sgp/
 
 # # ------------------------------------------------------------
 # # Set up default user 
