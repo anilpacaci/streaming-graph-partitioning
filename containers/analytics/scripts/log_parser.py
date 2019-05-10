@@ -130,7 +130,7 @@ def aggregate_logs(log_directory, output_csv_file):
 					})
 				print "!!! Done parsing {}".format(log_file)
 
-			except IOError, ValueError, ZeroDivisionError:
+			except (IOError, ValueError, ZeroDivisionError) as e:
 				print "Could not parse: {}, skipping entry".format(log_file)
 				# write result into csv
 				writer.writerow({
