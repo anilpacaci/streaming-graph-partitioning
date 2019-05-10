@@ -3,7 +3,7 @@
 		"snap-dataset" : "dataset/in/snap",
 		"adj-dataset" : "dataset/in/adf",
 		"log-folder" : "log/folder",
-		"result-folder" : "result/folder",
+		"result-file" : "result/file",
 		"nedges" : "500",
 		"nvertices" : "10000",
 		"worker-per-node" : 1,

@@ -5,6 +5,8 @@ import os
 import shlex
 import sys
 
+from log_parser import aggregate_logs
+
 edge_cut_sgp = ["random_ec", "ldg", "fennel", "metis"]
 vertex_cut_sgp = ["random", "dbh", "grid", "hdrf", "hybrid", "hybrid_ginger"]
 
@@ -26,7 +28,6 @@ class PowerLyraRun:
 	directed		= "true"
 	iterations		= -1
 	engine			= "plsync"
-	result_file		= ""
 	log_file		= ""
 
 	def __init__(self, machines, cpu_per_node, graph_nodes, graph_edges, algorithm, ingress):
@@ -59,7 +60,6 @@ class PowerLyraRun:
 		
 		# generate name from parameters
 		self.name = algorithm["name"] + "-" + str(machines) + "-" + ingress["name"]
-		self.result_file = os.path.join(result_folder, self.name)
 		self.log_file = os.path.join(log_folder, self.name)
 
 	def produceCommandString(self):
@@ -91,7 +91,6 @@ class PowerLyraRun:
 
 		command += "--engine {} ".format(self.engine)
 		# finally record the output
-		# command += "--saveprefix {} ".format(self.result_file)
 		command += "2>&1 | tee {} ".format(self.log_file)
 		return command
 
@@ -118,7 +117,7 @@ with open(parameters, 'rb') as parameters_file:
 	snap_dataset = run_config["snap-dataset"]
 	adj_dataset  = run_config["adj-dataset"]
 	log_folder = run_config["log-folder"]
-	result_folder = run_config["result-folder"]
+	aggregated_results_file = run_config["result-file"]
 	nverts = run_config["nvertices"]
 	nedges = run_config["nedges"]
 	pernode = run_config["worker-per-node"]
@@ -143,5 +142,7 @@ with open(parameters, 'rb') as parameters_file:
 		print "------------"
 
 	print "All runs are completed"
+
+	print "!!! Calling log aggregater on {}".format(log_folder)
 
 

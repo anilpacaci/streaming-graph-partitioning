@@ -12,4 +12,6 @@ target/
 #OSX related files
 .DS_Store
 
+#Python compiled files
+*.pyc 
 
