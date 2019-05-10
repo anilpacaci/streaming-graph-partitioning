@@ -4,7 +4,9 @@ import sys
 import os
 import re
 import csv
-import numpy
+
+def mean(lst): 
+    return sum(lst) / len(lst) 
 
 def aggregate_logs(log_directory, output_csv_file):
 	log_files		= []
@@ -44,7 +46,8 @@ def aggregate_logs(log_directory, output_csv_file):
 			calls_sent		= 0
 			calls_received	= 0
 			network_sent	= 0
-	                
+	         
+			print "Parsing {}".format(log_file)       
 			file = log_file.split("/")[-1]
 			algorithm = file.split("-")[0]
 			with open(log_file, 'r') as logs:
@@ -118,7 +121,7 @@ def aggregate_logs(log_directory, output_csv_file):
 				'ingress' : ingress, 
 				'rf' : str(rf), 
 				'total_ingress' : str(ingress_time + finalize_time),
-				'compute_imbalance' : str(numpy.amax(compute_balance) / numpy.mean(compute_balance) ), 
+				'compute_imbalance' : str(max(compute_balance) / mean(compute_balance) ), 
 				'total_time' : str(execution_time), 
 				'total_network' : str(network_sent)
 				})

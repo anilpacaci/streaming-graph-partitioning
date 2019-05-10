@@ -3,17 +3,17 @@
 	"runs" : {
 		"snap-dataset" : "soc-pokec/soc-pokec-snap-combined.txt",
 		"adj-dataset" : "soc-pokec/soc-pokec-adjacency-combined.txt",
-		"log-folder" : "sock-pokec-logs",
+		"log-folder" : "soc-pokec-logs",
 		"result-file" : "soc-pokec-test-run",
-		"nedges" : "500",
-		"nvertices" : "10000",
+		"nedges" : "30622564",
+		"nvertices" : "1432693",
 		"worker-per-node" : 1,
-		"workers" : [4,8],
+		"workers" : [4],
 		"ingress" : [
 			{"name" : "dbh"},
 			{"name" : "grid"},
 			{"name" : "random"},
-			{"name" : "random_ec"}
+			{"name" : "random_ec"},
 			{"name" : "fennel"}
 		],
 		"algorithm" : [
@@ -23,7 +23,7 @@
 			},
 			{
 				"name" : "sssp",
-				"source": 6257722
+				"source": 1
 			},
 			{"name" : "connected_component"}
 		]

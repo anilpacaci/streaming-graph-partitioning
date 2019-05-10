@@ -16,7 +16,7 @@ RUN apt-get update &&\
 
 # copy powerlyra codebase
 COPY powerlyra/ /sgp/powerlyra/
-COPY scripts/ /sgp/
+COPY scripts/ /sgp/scripts/
 
 # # ------------------------------------------------------------
 # # Set up default user 
@@ -28,8 +28,9 @@ RUN useradd -ms /bin/bash ${USER} \
       && echo "${USER}   ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 ENV USER_HOME /home/${USER}
-RUN chown -R ${USER}:${USER} ${USER_HOME}
-RUN chown -R ${USER}:${USER} /sgp
+RUN chown -R ${USER}:${USER} ${USER_HOME} && \
+	chown -R ${USER}:${USER} /sgp
+	chmod 777 /sgp
 
 # # ------------------------------------------------------------
 # # Set up SSH Server 

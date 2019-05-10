@@ -10,6 +10,8 @@ from log_parser import aggregate_logs
 # volumes defined in the docker compose file
 dataset_volume = "/sgp/datasets/"
 result_volume = "/sgp/results/"
+parameters_volume = "/sgp/parameters/"
+
 
 edge_cut_sgp = ["random_ec", "ldg", "fennel", "metis"]
 vertex_cut_sgp = ["random", "dbh", "grid", "hdrf", "hybrid", "hybrid_ginger"]
@@ -69,7 +71,7 @@ class PowerLyraRun:
 	def produceCommandString(self):
 		command = " mpiexec --mca btl_tcp_if_include eth0 "
 		command += "-n {} -npernode {} ".format(str(self.machines), str(self.cpu_per_node))
-		command += "-hostfile ~/machines "
+		command += "-hostfile /home/mpi/machines "
 		command += "/sgp/powerlyra/{} ".format(self.algorithm)
 		# following command control the number of cpus per instance, it uses all cores for threading by default
 		#command += "--ncpus {} ".format(str(self.cpu_per_node))
@@ -105,23 +107,24 @@ if len(sys.argv) != 2:
 
 # second argument is the parameters file
 parameters = sys.argv[1]
-		
+parameters_file = os.path.join(parameters_volume, parameters)
+	
 # list to hold all the objects for this set of experiments
 run_list = []
 
 # generate proper host files
-# os.system("/home/mpi/get_hosts > /home/mpi/machines")
+os.system("/home/mpi/get_hosts > /home/mpi/machines")
 
 # parse json files and populate PowerLyraRun objects
-with open(parameters, 'rb') as parameters_file:
-	parameters_json = json.load(parameters_file)
+with open(parameters_file, 'rb') as parameters_handle:
+	parameters_json = json.load(parameters_handle)
 	run_config = parameters_json["runs"]
 	
 	## read global parameters from the json file
 	snap_dataset = os.path.join(dataset_volume, run_config["snap-dataset"])
 	adj_dataset  = os.path.join(dataset_volume, run_config["adj-dataset"])
-	log_folder = run_config["log-folder"]
-	aggregated_results_file = run_config["result-file"]
+	log_folder = os.path.join(result_volume, run_config["log-folder"])
+	aggregated_results_file = os.path.join(result_volume, run_config["result-file"])
 	nverts = run_config["nvertices"]
 	nedges = run_config["nedges"]
 	pernode = run_config["worker-per-node"]
@@ -130,6 +133,10 @@ with open(parameters, 'rb') as parameters_file:
 	workers_list = run_config["workers"]
 	ingress_list = run_config["ingress"]
 	algorithm_list = run_config["algorithm"]
+
+	# initialize the log directory for results
+	if not os.path.exists(log_folder):
+		os.makedirs(log_folder)
 
 	for worker in workers_list:
 		for ingress in ingress_list:
@@ -140,7 +147,7 @@ with open(parameters, 'rb') as parameters_file:
 	for run in run_list:
 		print "------------"
 		print "!!! Executing on MPI Cluster: {}".format(run.produceCommandString())
-		# result = os.system(run.produceCommandString())
+		result = os.system(run.produceCommandString())
 		result = 1	
 		print "!!! MPI Cluster returns: {}".format(result)
 		print "------------"
