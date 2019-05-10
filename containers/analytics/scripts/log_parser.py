@@ -50,80 +50,100 @@ def aggregate_logs(log_directory, output_csv_file):
 			print "Parsing {}".format(log_file)       
 			file = log_file.split("/")[-1]
 			algorithm = file.split("-")[0]
-			with open(log_file, 'r') as logs:
-				for log in logs:
-					# now we need to check for each occurance of parameters that we try to parse
-					match = re.search("Cluster of (.*) instances", log)
-					if match != None:
-						nparts = int(match.group(1))
-					# match for ingress method
-					match = re.search("ingress = (.*)", log)
-					if match != None:
-						ingress = match.group(1)
-					# replication factor
-					match = re.search("replication factor: (.*)", log)
-					if match != None:
-						rf = float(match.group(1))
-					# ingress time
-					match = re.search("Final Ingress \(second\): (.*)", log)
-					if match != None:
-						ingress_time = float(match.group(1))
-					# finalize time
-					match = re.search("Finalizing graph. Finished in (.*)", log)
-					if match != None:
-						finalize_time = float(match.group(1))
-					# iterations
-					match = re.search(": (\w*) iterations completed", log)
-					if match != None:
-						iterations = int(match.group(1))
-					# compute balance array
-					match = re.search("Compute Balance: (.*)", log)
-					if match != None:
-						compute_balance = map(float, match.group(1).split())
-					# gas calls 
-					match = re.search(" Total Calls\(G\|A\|S\): (.*)", log)
-					if match != None:
-						[gather_call, apply_call, scatter_call] = map(float, match.group(1).split("|"))
-					# execution time
-					match = re.search("Execution Time: (.*)", log)
-					if match != None:
-						execution_time = float(match.group(1))
-					# Breakdown of timing
-					match = re.search("Breakdown\(X\|R\|G\|A\|S\): (.*)", log)
-					if match != None:
-						[breakdownx, breakdownr, breakdowng, breakdowna, breakdowns] = map(float, match.group(1).split("|"))
-					# bytes sent
-					match = re.search("Bytes Sent: (.*)", log)
-					if match != None:
-						bytes_sent += int(match.group(1))
-					# calls sent
-					match = re.search("Calls Sent: (.*)", log)
-					if match != None:
-						calls_sent += int(match.group(1))
-					# bytes received
-					match = re.search("Bytes Received: (.*)", log)
-					if match != None:
-						bytes_received += int(match.group(1))
-					# calls received
-					match = re.search("Calls Received: (.*)", log)
-					if match != None:
-						calls_received += int(match.group(1))
-					# network sent
-					match = re.search("Network Sent: (.*)", log)
-					if match != None:
-						network_sent += int(match.group(1))
 
-			# write result into csv
-			writer.writerow({
-				'file' : file,
-				'algorithm' : algorithm,
-				'partitions' : str(nparts), 
-				'ingress' : ingress, 
-				'rf' : str(rf), 
-				'total_ingress' : str(ingress_time + finalize_time),
-				'compute_imbalance' : str(max(compute_balance) / mean(compute_balance) ), 
-				'total_time' : str(execution_time), 
-				'total_network' : str(network_sent)
-				})
-			print("!!! Done parsing {}".format(log_file))
+			try:
 
+				with open(log_file, 'r') as logs:
+					for log in logs:
+						# now we need to check for each occurance of parameters that we try to parse
+						match = re.search("Cluster of (.*) instances", log)
+						if match != None:
+							nparts = int(match.group(1))
+						# match for ingress method
+						match = re.search("ingress = (.*)", log)
+						if match != None:
+							ingress = match.group(1)
+						# replication factor
+						match = re.search("replication factor: (.*)", log)
+						if match != None:
+							rf = float(match.group(1))
+						# ingress time
+						match = re.search("Final Ingress \(second\): (.*)", log)
+						if match != None:
+							ingress_time = float(match.group(1))
+						# finalize time
+						match = re.search("Finalizing graph. Finished in (.*)", log)
+						if match != None:
+							finalize_time = float(match.group(1))
+						# iterations
+						match = re.search(": (\w*) iterations completed", log)
+						if match != None:
+							iterations = int(match.group(1))
+						# compute balance array
+						match = re.search("Compute Balance: (.*)", log)
+						if match != None:
+							compute_balance = map(float, match.group(1).split())
+						# gas calls 
+						match = re.search(" Total Calls\(G\|A\|S\): (.*)", log)
+						if match != None:
+							[gather_call, apply_call, scatter_call] = map(float, match.group(1).split("|"))
+						# execution time
+						match = re.search("Execution Time: (.*)", log)
+						if match != None:
+							execution_time = float(match.group(1))
+						# Breakdown of timing
+						match = re.search("Breakdown\(X\|R\|G\|A\|S\): (.*)", log)
+						if match != None:
+							[breakdownx, breakdownr, breakdowng, breakdowna, breakdowns] = map(float, match.group(1).split("|"))
+						# bytes sent
+						match = re.search("Bytes Sent: (.*)", log)
+						if match != None:
+							bytes_sent += int(match.group(1))
+						# calls sent
+						match = re.search("Calls Sent: (.*)", log)
+						if match != None:
+							calls_sent += int(match.group(1))
+						# bytes received
+						match = re.search("Bytes Received: (.*)", log)
+						if match != None:
+							bytes_received += int(match.group(1))
+						# calls received
+						match = re.search("Calls Received: (.*)", log)
+						if match != None:
+							calls_received += int(match.group(1))
+						# network sent
+						match = re.search("Network Sent: (.*)", log)
+						if match != None:
+							network_sent += int(match.group(1))
+
+				# write result into csv
+				writer.writerow({
+					'file' : file,
+					'algorithm' : algorithm,
+					'partitions' : str(nparts), 
+					'ingress' : ingress, 
+					'rf' : str(rf), 
+					'total_ingress' : str(ingress_time + finalize_time),
+					'compute_imbalance' : str(max(compute_balance) / mean(compute_balance) ), 
+					'total_time' : str(execution_time), 
+					'total_network' : str(network_sent)
+					})
+				print "!!! Done parsing {}".format(log_file)
+
+			except IOError, ValueError, ZeroDivisionError:
+				print "Could not parse: {}, skipping entry".format(log_file)
+				# write result into csv
+				writer.writerow({
+					'file' : file,
+					'algorithm' : algorithm,
+					'partitions' : str(nparts), 
+					'ingress' : ingress, 
+					'rf' : "-", 
+					'total_ingress' : "-",
+					'compute_imbalance' : "-", 
+					'total_time' : "-", 
+					'total_network' : "-"
+					})
+			except:
+				print "Unexpected error: {}".format(sys.exec_info()[0])
+				raise
