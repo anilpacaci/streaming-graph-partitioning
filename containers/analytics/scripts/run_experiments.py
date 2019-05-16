@@ -115,6 +115,10 @@ run_list = []
 # generate proper host files
 os.system("/home/mpi/get_hosts > /home/mpi/machines")
 
+# user mpi is sudo - setup by default by container
+# set permissions on the folder
+os.system("sudo chown -R mpi:mpi {}".format(result_volume))
+
 # parse json files and populate PowerLyraRun objects
 with open(parameters_file, 'rb') as parameters_handle:
 	parameters_json = json.load(parameters_handle)

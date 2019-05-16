@@ -1,12 +1,10 @@
 #!/bin/sh
 
+$ default parameters incase swarm.conf is not defined
 PROJECT_NAME="powerlyra"
 
 PL_MASTER_NAME="powerlyra-master"
 PL_WORKER_NAME="powerlyra-worker"
-
-MASTER_SERVICE_NAME="${PROJECT_NAME}"_"${PL_MASTER_NAME}"
-WORKER_SERVICE_NAME="${PROJECT_NAME}"_"${PL_WORKER_NAME}"
 
 NETWORK_NAME="powerlyra-network"
 
@@ -19,8 +17,20 @@ SWARM_MANAGER_IP="192.168.152.51"
 
 DOCKER_WORKER_NODES="/home/apacaci/docker_machines"
 
+
+# include conf file if it is defined
+if [ -f ./swarm.conf ]; then
+    . ./swarm.conf
+fi
+
+# set variables
+
+MASTER_SERVICE_NAME="${PROJECT_NAME}"_"${PL_MASTER_NAME}"
+WORKER_SERVICE_NAME="${PROJECT_NAME}"_"${PL_WORKER_NAME}"
+
 create_network () 
 {
+	printf "\\n\\n===> CREATE OVERLAY NETWORK"
     printf "$ docker network create  \\
                 --driver overlay      \\
                 %s\\n" "${NETWORK_NAME}"
@@ -31,13 +41,12 @@ create_network ()
             ${NETWORK_NAME}
 
     echo "=> network is created"
-
-    delay
 }
 
 remove_network ()
 {
-    printf "\\n\\n===> REMOVE NETWORK"
+    printf "\\n\\n===> REMOVE OVERLAY NETWORK"
+	printf "\\n"	
 
     echo "$ docker network rm ${NETWORK_NAME}"
     printf "\\n"
@@ -46,14 +55,14 @@ remove_network ()
     else
         echo "=> No problem"
     fi
-
-    delay
 }
 
 build_and_push_image ()
 {
     printf "\\n\\n===> BUILD IMAGE"
-    echo "$ docker build -t \"${IMAGE_TAG}\" \"${IMAGE_FILE}\""
+    printf "\\n"
+
+	echo "$ docker build -t \"${IMAGE_TAG}\" \"${IMAGE_FILE}\""
     printf "\\n"
     docker build -t ${IMAGE_TAG} ${IMAGE_FILE}
 
@@ -70,7 +79,9 @@ build_and_push_image ()
 init_swarm()
 {
     printf "\\n\\n===> SWARM INIT\\n"
-    echo "$ docker swarm init --advertise-addr \"${SWARM_MANAGER_IP}\""
+    printf "\\n"
+	
+	echo "$ docker swarm init --advertise-addr \"${SWARM_MANAGER_IP}\""
     printf "\\n"
     docker swarm init --advertise-addr ${SWARM_MANAGER_IP}
 
@@ -124,4 +135,114 @@ stop_service()
     printf "\\n"
     docker service rm ${MASTER_SERVICE_NAME}
 }
+
+run_experiments()
+{
+	printf "\\n\\n ===> RUN EXPERIMENTS"
+	printf "\\n"
+	if [ $# -eq 0 ] ; then
+		echo "Supply relative path of the configuration file under /sgp/parameters/"
+		exit 1
+	fi
+
+	EXPERIMENT_CONF=$1
+
+	echo "docker exec -u mpi -it \"${MASTER_SERVICE_NAME}\".1.\$\(docker service ps -f name=\"${MASTER_SERVICE_NAME}\".1 \"${MASTER_SERVICE_NAME}\" -q --no-trunc \| head -n1\) /sgp/scripts/run_experiments.py \"${EXPERIMENT_CONF}\" "
+	printf "\\n"
+	docker exec -u mpi -it ${MASTER_SERVICE_NAME}.1.$(docker service ps -f name=${MASTER_SERVICE_NAME}.1 ${MASTER_SERVICE_NAME} -q --no-trunc | head -n1) /sgp/scripts/run_experiments.py ${EXPERIMENT_CONF}
+}
+
+
+usage()
+{
+    echo ' More info: https://github.com/anilpacaci/streaming-graph-partitioning'
+    echo ''
+    echo '=============================================================='
+    echo ''
+
+    echo "To run a set of experiments:"
+    echo "	1. Initialize the docker cluster in swarm mode"
+    echo "		$ ./swarm.sh init"
+    echo ""
+    echo "		starts a swarm master that is advertised with given IP and"
+    echo "		and creates an overlay network "
+    echo ""
+    echo "	2. Build the PowerLyra container and deploy to local registry:"
+    echo "		$ ./swarm.sh build"
+    echo ""
+    echo "		builds and deploys the specified docker image"
+    echo ""
+    echo "	3. Start PowerLyra cluster:"
+    echo "		$ ./swarm.sh start"
+    echo ""
+    echo "		starts a container in the machines specified in the host file"
+    echo ""
+    echo "	4. Run experiments:"
+    echo "		$ ./swarm.sh run config_file"
+    echo ""
+    echo "		runs a set of experiments described in the config file"
+    echo ""
+    echo "	5. Stop PowerLyra container:"
+    echo "		$ ./swarm.sh stop"
+    echo ""
+    echo "		stops containers in the machines specified in the host file"
+    echo ""
+    echo "	6. Tear down docker cluster:"
+    echo "		$ ./swarm.sh destroy"
+    echo ""
+    echo "		removes the overlay network and forces nodes to leave the swarm"
+    echo ""
+    echo "	7. Print this help message:"
+    echo "		$ ./swarm.sh usage"
+    echo ""
+}
+
+# Identify the command and run the corresponding function
+
+
+COMMAND=$1
+PARAM=$2
+
+case "$COMMAND" in
+	(start) 
+		start_service
+		exit 0
+	;;
+	(stop)
+		stop_service
+		exit 0
+	;;
+	(build)
+		build_and_push_image
+		exit 0
+	;;
+	(run)
+		if [ -z $PARAM ] 
+		then
+			echo "usage: ${0} ${COMMAND} config_file"
+			exit 2
+		fi
+		run_experiments $PARAM
+		exit 0
+	;;
+	(init)
+        init_swarm $PARAM
+		create_network
+        exit 0
+	;;
+	(destroy)
+		remove_network
+		destroy_swarm
+		exit 0
+	;;
+	(usage)
+		usage
+		exit 0
+	;;
+	(*)
+		echo "ERROR: unknown parameter \"$COMMAND\""
+		usage
+		exit 2
+	;;
+esac
 

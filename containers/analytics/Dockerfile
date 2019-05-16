@@ -12,7 +12,7 @@ WORKDIR /sgp
 
 # install necessary dependencies for powergraph
 RUN apt-get update &&\
-	apt-get -y install default-jdk gcc openssh-server openmpi-bin python dnsutils
+	apt-get -y install default-jdk gcc openssh-server openmpi-bin python dnsutils sudo
 
 # copy powerlyra codebase
 COPY powerlyra/ /sgp/powerlyra/
@@ -28,9 +28,11 @@ RUN useradd -ms /bin/bash ${USER} \
       && echo "${USER}   ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 ENV USER_HOME /home/${USER}
-RUN chown -R ${USER}:${USER} ${USER_HOME} && \
-	chown -R ${USER}:${USER} /sgp
-	chmod 777 /sgp
+RUN chown -R ${USER}:${USER} ${USER_HOME} &&\
+	mkdir /sgp/parameters/ &&\
+	mkdir /sgp/results/ &&\
+	chown -R ${USER}:${USER} /sgp &&\
+	chmod -R 777 /sgp
 
 # # ------------------------------------------------------------
 # # Set up SSH Server 
@@ -66,6 +68,7 @@ RUN chmod +x /home/mpi/get_hosts &&\
 	chown -R ${USER}:${USER} /home/mpi/get_hosts
 
 # # Start SSH Server 
-RUN mkdir /var/run/sshd
+RUN sudo mkdir /var/run/sshd
 EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D"]
+

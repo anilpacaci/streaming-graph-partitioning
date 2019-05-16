@@ -8,12 +8,8 @@
 		"nedges" : "30622564",
 		"nvertices" : "1432693",
 		"worker-per-node" : 1,
-		"workers" : [4],
+		"workers" : [8],
 		"ingress" : [
-			{"name" : "dbh"},
-			{"name" : "grid"},
-			{"name" : "random"},
-			{"name" : "random_ec"},
 			{"name" : "fennel"}
 		],
 		"algorithm" : [
