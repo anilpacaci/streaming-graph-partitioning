@@ -19,12 +19,6 @@ This testbed has two main components with different infrastructure based on the 
 
 All the components are dockerized and bash scripts to automate initializing, running experiments etc. are provided.
 
-#### Contents
-
-This repository contains:
-
-- scripts:
-- containers:
 
 
 #### Prerequisites
