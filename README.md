@@ -1,6 +1,6 @@
 # Streaming Graph Partitioning
 
-Testbed for performance analysis of graph partitioning algorithms on graph computations. This framework has been developed as a part of an experimental study focusing on streaming algorithms for graph partitioning. For more details, please refer to our SIGMOD'19 paper:
+Experimental framework for performance analysis of graph partitioning algorithms on graph computations. This framework has been developed as a part of an experimental study focusing on streaming algorithms for graph partitioning. For more details, please refer to our SIGMOD'19 paper:
 
 ```
 Anil Pacaci and M. Tamer Özsu. 2019. Experimental Analysis of Streaming Algorithms for Graph Partitioning. 
@@ -9,3 +9,24 @@ June 30-July 5, 2019, Amsterdam, Netherlands.
 ACM, New York, NY, USA, 18 pages. https://doi.org/10.1145/3299869.3300076
 ```
 
+####  Organization
+
+This testbed has two main components based on two different architecture: 
+
+All the components are dockerized
+
+
+#### Contents
+
+This repository contains necess
+
+
+#### Prerequisites
+
+It is recommended to use 
+
+
+## Offline Graph Analytics
+
+
+## Online Graph Queries
