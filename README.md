@@ -142,23 +142,33 @@ First change working directory to `scripts/analytics` and make sure that `swarm.
 It starts the Swarm leader in the given node, then adds every node in the `DOCKER_WORKER_NODES` as Swarm workers. In additions, it creates an overlay network that connects Docker PowerLyra images.
 
 * Build PowerLyra Docker image
-```$. ./swarm.sh build```
+
+```$ ./swarm.sh build```
+
 It starts a private docker service registry in the master machine, then builds and deploys the PowerLyra docker image to this registry where worker nodes can pull the built contaier.
 
 * Start PowerLyra Cluster service
+
 ```$ ./swarm.sh start```
+
 Start a PowerLyra instance on each node defined in `DOCKER_WORKER_NODES`.
 
 * Run experiemnts
+
 ```$ ./swarm.sh run config_file```
+
 Run a set of experiments defined in `config_file`. Note that `config_file` must be a **relative** path under `volumes.parameters.driver_opts.device` directory.
 
 * Stop PowerLyra containers and Service
+
 ```$ ./swarm.sh stop```
+
 Stop PowerLyra container and the PowerLyra service in the Swarm cluster.
 
 * Cleanup Swarm Cluster
+
 ```$ ./swarm.sh destroy```
+
 Removes the overlay network and forces each node in the cluster to leave the swarm.
 
 #### Manual Runs
