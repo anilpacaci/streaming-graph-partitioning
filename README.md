@@ -174,3 +174,27 @@ If you want to add additional partitioning algorithms and/or offline graph analy
 It is possible to use the Docker images and scripts provided in this repository with a modified PowerLyra version. Once the modified PowerLyra codebase is compiled and new binaries are generated, deploy the release binaries under `containers/analytics/powerlyra` folder, then follow the steps described above to build Docker images and run experiments.
 
 ## Online Graph Queries
+
+
+
+**TODO May 16, 2019**: Dockerized version of the JanusGraph cluster will be added.
+
+#### Manual Runs
+
+Setup used in our SIGMOD'19 paper consists of a JanusGraph instance (version 0.3.0) and a Cassandra (version 2.1.9) instance for each node in the cluster.
+Explicit partitioning should be enabled by setting:
+```
+ids.placement=org.janusgraph.graphdb.database.idassigner.placement.PartitionAwarePlacementStrategy
+ids.placement-history=[memcached|inmemory]
+ids.placement-history-hostname=192.168.152.153:11211
+ids.loader-mapping=[memcached|inmemory]
+ids.loader-mapping-hostname=192.168.152.153:11211
+```
+
+It enables graph loaders to use explicit mapping loaded into Memcached. This way, any partitioning scheme produced by an external algorithm can be enforced on JanusGraph vertex-to-machine allocation scheme.
+
+In addition, JanusGraph client driver uses the `Partition-Aware routing strategy` (modified Tinkerpop library with the partition aware router can be found [here](https://github.com/anilpacaci/tinkerpop/tree/intelligentrouter-3.3.1)) that routes queries based on the location of the start vertex of the query. It is a necessary step as JanusGraph  routes queries to a random instance by default. 
+
+Cassandra instances are configured to use `ByteOrderedPartitioner` to enable range partitioning. By defalt, JanusGraph divides the entire key space of Cassandra to equal partitions, and computes an `id` from a particular partitions range to enforce vertex placement on a particular partition. In order to set `ByteOrderedPartitioner`, change `conf/cassandra.yaml` under Cassandra installation on  each node:
+
+`partitioner: org.apache.cassandra.dht.ByteOrderedPartitioner`
