@@ -21,7 +21,10 @@ All the components are dockerized and bash scripts to automate initializing, run
 
 #### Contents
 
-This repository contains necess
+This repository contains:
+
+- scripts:
+- containers:
 
 
 #### Prerequisites
@@ -35,6 +38,32 @@ For automated docker setup, cluster of machines with Docker 18.09.5 is required.
 Please make sure that Docker can be used as a non-root user in all the machines in the cluster, for details: [Docker](https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user) 
 
 In addition, automated scripts assume that passwordless ssh is setup between all machines in the cluster, for more details on how to setup passwordless ssh: [passwordless-ssh](http://www.linuxproblem.org/art_9.html).
+
+#### Datasets
+
+We use the following datasets in our experiments in the SIGMOD'19 paper:
+
+|  Dataset  | Edges | Vertices | Max Degree |     Type     |
+|:---------:|:-----:|:--------:|:----------:|:------------:|
+|  Twitter  | 1.46B |    41M   |    2.9M    | Heavy Tailed |
+| UK2007-05 | 3.73B |   105M   |    975K    |   Power-law  |
+|  US-Road  | 58.3M |    23M   |      9     |  Low-degree  |
+|  LDBC SNB SF1000 |  3.6M |   447M   |    3682    | Heavy Tailed |
+
+
+Download Links:
+  - Twitter: https://an.kaist.ac.kr/traces/WWW2010.html
+  - UK2007-05: http://law.di.unimi.it/webdata/uk-2007-05/
+  - USA-Road Network: http://users.diag.uniroma1.it/challenge9/download.shtml
+  - LDBC SNB: https://github.com/ldbc/ldbc_snb_datagen
+
+All datasets are in edge-list format by default. Edge-cut streaming graph partitioning algorithms requires adjacency list representation, where each line represents a vertex and all of its outgoing edges:
+
+`vertex_id neighbour_1_id neighbour_2_id ... neighbour_n_id`
+
+We provide Spark scripts to convert from edge list format to adjacency list format. See [csv-converter](https://github.com/anilpacaci/streaming-graph-partitioning/tree/master/csv-converter)
+
+Note: We only use the friendship network (`person_knows_person` relationship) of the LDBC synthetic dataset. File with the friendship information can be find `social_network/person_knows_person_0_0.csv` in the generated dataset.
 
 ## Offline Graph Analytics
 
