@@ -1,6 +1,6 @@
 # Streaming Graph Partitioning
 
-Experimental framework for performance analysis of graph partitioning algorithms on graph computations. This framework has been developed as a part of an experimental study focusing on streaming algorithms for graph partitioning. For more details, please refer to our SIGMOD'19 paper:
+Experimental framework for performance analysis of graph partitioning algorithms on graph computations. This framework has been developed as a part of an experimental study focusing on streaming algorithms for graph partitioning. For more details, please refer to our [SIGMOD'19 paper](https://dl.acm.org/citation.cfm?id=3300076):
 
 ```
 Anil Pacaci and M. Tamer Özsu. 2019. Experimental Analysis of Streaming Algorithms for Graph Partitioning. 
