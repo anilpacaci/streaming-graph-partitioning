@@ -34,7 +34,6 @@ services:
         constraints:
           - node.role == worker
     environment:
-      CASSANDRA_BROADCAST_ADDRESS: worker2
       CASSANDRA_SEEDS: worker1
     depends_on:
       - worker1
@@ -53,7 +52,6 @@ services:
         constraints:
           - node.role == worker
     environment:
-      CASSANDRA_BROADCAST_ADDRESS: worker3
       CASSANDRA_SEEDS: worker1
     depends_on:
           - worker1
@@ -73,7 +71,6 @@ services:
         constraints:
           - node.role == worker
     environment:
-      CASSANDRA_BROADCAST_ADDRESS: worker4
       CASSANDRA_SEEDS: worker1
     depends_on:
           - worker1
