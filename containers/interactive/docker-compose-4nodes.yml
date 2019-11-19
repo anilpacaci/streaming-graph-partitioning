@@ -43,6 +43,25 @@ services:
       janusgraph-network:
         aliases:
           - '{{.Service.Name}}-{{.Task.Slot}}'
+
+  master:
+    image: 127.0.0.1:5000/master
+    volumes:
+      - results:/sgp/results/
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    environment:
+      CASSANDRA_INITIAL_TOKEN: 1000000000000000
+    depends_on:
+      - worker1
+    networks:
+      janusgraph-network:
+        aliases:
+          - '{{.Service.Name}}-{{.Task.Slot}}'
+
 networks:
   janusgraph-network:
     driver: overlay
