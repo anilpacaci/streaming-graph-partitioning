@@ -32,7 +32,7 @@ JANUSGRAPH_STORAGE_HOSTNAME="$(_ip_address)"
 
 if [ "$JANUSGRAPH_STORAGE_HOSTNAME" ]; then
     _sed-in-place "$JANUSGRAPH_HOME/conf/gremlin-server/janusgraph-cassandra-es-server.properties" \
-        -r 's/^(# )?(storage\.hostname=).*/\2 "$JANUSGRAPH_STORAGE_HOSTNAME"/'
+        -r 's/^(# )?(storage\.hostname=).*/\2 '"$JANUSGRAPH_STORAGE_HOSTNAME"'/'
 fi
 
 # modified using original cassandra entrypoint
