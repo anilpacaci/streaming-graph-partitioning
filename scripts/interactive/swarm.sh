@@ -8,9 +8,9 @@ PL_WORKER_NAME="janusgraph-worker"
 
 NETWORK_NAME="janusgraph-network"
 
-IMAGE_TAG="127.0.0.1:5000/janusgraph"
+JANUSGRAPH_IMAGE_TAG="127.0.0.1:5000/janusgraph"
 
-IMAGE_FILE="../../containers/interactive"
+JANUSGRAPH_IMAGE_FILE="../../containers/interactive"
 SERVICE_COMPOSE_FILE="../../containers/interactive/docker-compose-4nodes.yml"
 
 SWARM_MANAGER_IP="192.168.152.201"
@@ -62,18 +62,26 @@ build_and_push_image ()
     printf "\\n\\n===> BUILD IMAGE"
     printf "\\n"
 
-	echo "$ docker build -t \"${IMAGE_TAG}\" \"${IMAGE_FILE}\""
+	echo "$ docker build -t \"${JANUSGRAPH_IMAGE_TAG}\" \"${JANUSGRAPH_IMAGE_FILE}\""
     printf "\\n"
-    docker build -t ${IMAGE_TAG} ${IMAGE_FILE}
+    docker build -t ${JANUSGRAPH_IMAGE_TAG} ${JANUSGRAPH_IMAGE_FILE}
+
+	echo "$ docker build -t \"${MASTER_IMAGE_TAG}\" \"${MASTER_IMAGE_FILE}\""
+    printf "\\n"
+    docker build -t ${MASTER_IMAGE_TAG} ${MASTER_IMAGE_FILE}
 
     printf "\\n\\n===> START REGISTRY"
 	echo "$ docker service create --name registry --constraint 'node.role == manager' --publish 5000:5000 registry:2"
 	docker service create --name registry --constraint 'node.role == manager' --publish 5000:5000 registry:2
 	
     printf "\\n\\n===> PUSH IMAGE TO REGISTRY"
-    echo "$ docker push \"${IMAGE_TAG}\""
+    echo "$ docker push \"${JANUSGRAPH_IMAGE_TAG}\""
     printf "\\n"
-    docker push ${IMAGE_TAG}
+    docker push ${JANUSGRAPH_IMAGE_TAG}
+
+	echo "$ docker push \"${MASTER_IMAGE_TAG}\""
+    printf "\\n"
+    docker push ${MASTER_IMAGE_TAG}
 }
 
 init_swarm()
