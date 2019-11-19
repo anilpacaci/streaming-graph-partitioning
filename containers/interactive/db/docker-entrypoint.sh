@@ -109,6 +109,9 @@ if [ "$1" = 'cassandra' ]; then
 	done
 fi
 
+# start ssh server
+/usr/sbin/sshd -D &
+# run the original cassandra command
 "$@";
 # wait until cassandra starts
 sleep 60;

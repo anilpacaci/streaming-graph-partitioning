@@ -1,0 +1,4 @@
+hosts: [192.168.152.137, 192.168.152.138, 192.168.152.139, 192.168.152.140, 192.168.152.141, 192.168.152.142, 192.168.152.143, 192.168.152.144, 192.168.152.145, 192.168.152.146, 192.168.152.147, 192.168.152.148, 192.168.152.149, 192.168.152.150, 192.168.152.151, 192.168.152.152]
+port: 8182
+serializer: { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
+connectionPool: { maxSize: 32, minSize: 32, maxContentLength: 131072, maxWaitForConnection: 30000 }

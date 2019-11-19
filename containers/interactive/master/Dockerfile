@@ -7,26 +7,49 @@ USER root
 WORKDIR /sgp
 
 # # ------------------------------------------------------------
-# # Set up tools
-# # ------------------------------------------------------------
-
-RUN apt-get update &&\
-	apt-get -y install default-jdk openssh-server python dnsutils sudo memcached
-
-# # ------------------------------------------------------------
 # # ENVIRONMENT VARIABLES
 # # ------------------------------------------------------------
 
 ENV JANUSGRAPH_HOME=/sgp/janusgraph
 
+# # ------------------------------------------------------------
+# # Set up tools
+# # ------------------------------------------------------------
 
+RUN apt-get update &&\
+	apt-get -y install default-jdk openssh-server python dnsutils vim sudo memcached
 
+COPY janusgraph ${JANUSGRAPH_HOME}
+COPY scripts /sgp/scripts
 
+# # ------------------------------------------------------------
+# # SSH Setup
+# # ------------------------------------------------------------
+# Add host keys
+RUN cd /etc/ssh/ && ssh-keygen -A -N ''
+
+# Config SSH Daemon
+RUN  sed -i "s/#PasswordAuthentication.*/PasswordAuthentication no/g" /etc/ssh/sshd_config \
+  && sed -i "s/PermitRootLogin.*/PermitRootLogin yes/g" /etc/ssh/sshd_config \
+  && sed -i "s/#AuthorizedKeysFile/AuthorizedKeysFile/g" /etc/ssh/sshd_config
+
+# Set up user's public and private keys
+ENV SSHDIR /root/.ssh
+RUN mkdir -p ${SSHDIR}
+
+# Default ssh config file that skips (yes/no) question when first login to the host
+RUN echo "StrictHostKeyChecking no" > ${SSHDIR}/config
+
+COPY ssh/ ${SSHDIR}/
+
+RUN cat ${SSHDIR}/*.pub >> ${SSHDIR}/authorized_keys
+RUN chmod -R 600 ${SSHDIR}/* \
+         && chown -R ${USER}:${USER} ${SSHDIR}
 
 
 
 # # ------------------------------------------------------------
 # # Initialization
 # # ------------------------------------------------------------
-
-ENTRYPOINT ["python", "docker-entrypoint.py"]
+COPY ./docker-entrypoint.py /
+ENTRYPOINT ["python", "/docker-entrypoint.py"]
