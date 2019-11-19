@@ -1,6 +1,40 @@
 #!/bin/bash
 set -e
 
+# common function defined by original cassandra docker-entrypoint
+
+_ip_address() {
+    # scrape the first non-localhost IP address of the container
+    # in Swarm Mode, we often get two IPs -- the container IP, and the (shared) VIP, and the container IP should always be first
+    ip address | awk '
+        $1 == "inet" && $NF != "lo" {
+            gsub(/\/.+$/, "", $2)
+            print $2
+            exit
+        }
+    '
+}
+
+# "sed -i", but without "mv" (which doesn't work on a bind-mounted file, for example)
+_sed-in-place() {
+    local filename="$1"; shift
+    local tempFile
+    tempFile="$(mktemp)"
+    sed "$@" "$filename" > "$tempFile"
+    cat "$tempFile" > "$filename"
+    rm "$tempFile"
+}
+
+# Commands to be executed as root
+
+# Janusgraph specific configuration
+JANUSGRAPH_STORAGE_HOSTNAME="$(_ip_address)"
+
+if [ "$JANUSGRAPH_STORAGE_HOSTNAME" ]; then
+    _sed-in-place "$JANUSGRAPH_HOME/conf/gremlin-server/janusgraph-cassandra-es-server.properties" \
+        -r 's/^(# )?(storage\.hostname=).*/\2 "$JANUSGRAPH_STORAGE_HOSTNAME"/'
+fi
+
 # modified using original cassandra entrypoint
 
 # first arg is `-f` or `--some-option`
@@ -10,33 +44,11 @@ if [ "$#" -eq 0 ] || [ "${1#-}" != "$1" ]; then
 fi
 
 # allow the container to be started with `--user`
-if [ "$1" = 'cassandra' -a "$(id -u)" = '0' ]; then
-	find /var/lib/cassandra /var/log/cassandra "$CASSANDRA_CONFIG" \
-		\! -user cassandra -exec chown cassandra '{}' +
-	exec gosu cassandra "$BASH_SOURCE" "$@"
-fi
-
-_ip_address() {
-	# scrape the first non-localhost IP address of the container
-	# in Swarm Mode, we often get two IPs -- the container IP, and the (shared) VIP, and the container IP should always be first
-	ip address | awk '
-		$1 == "inet" && $NF != "lo" {
-			gsub(/\/.+$/, "", $2)
-			print $2
-			exit
-		}
-	'
-}
-
-# "sed -i", but without "mv" (which doesn't work on a bind-mounted file, for example)
-_sed-in-place() {
-	local filename="$1"; shift
-	local tempFile
-	tempFile="$(mktemp)"
-	sed "$@" "$filename" > "$tempFile"
-	cat "$tempFile" > "$filename"
-	rm "$tempFile"
-}
+#if [ "$1" = 'cassandra' -a "$(id -u)" = '0' ]; then
+#	find /var/lib/cassandra /var/log/cassandra "$CASSANDRA_CONFIG" \
+#		\! -user cassandra -exec chown cassandra '{}' +
+#	exec gosu cassandra "$BASH_SOURCE" "$@"
+#fi
 
 if [ "$1" = 'cassandra' ]; then
 	: ${CASSANDRA_RPC_ADDRESS='0.0.0.0'}

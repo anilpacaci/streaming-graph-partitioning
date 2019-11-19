@@ -7,6 +7,12 @@ USER root
 WORKDIR /sgp
 
 # # ------------------------------------------------------------
+# # ENVIRONMENT VARIABLES
+# # ------------------------------------------------------------
+
+ENV JANUSGRAPH_HOME=/sgp/janusgraph
+
+# # ------------------------------------------------------------
 # # Set up JanusGraph code
 # # ------------------------------------------------------------
 
@@ -14,10 +20,8 @@ WORKDIR /sgp
 RUN apt-get update &&\
 	apt-get -y install default-jdk gcc openssh-server openmpi-bin python dnsutils sudo vim iputils-ping
 
-# copy powerlyra codebase
-#COPY powerlyra/ /sgp/powerlyra/
-#COPY scripts/ /sgp/scripts/
-
+# copy JanusGraph Codebase
+COPY janusgraph/ ${JANUSGRAPH_HOME}
 
 # # ------------------------------------------------------------
 # # initialization script

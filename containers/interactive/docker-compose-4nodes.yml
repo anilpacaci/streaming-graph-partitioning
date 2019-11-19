@@ -13,6 +13,7 @@ services:
           - node.role == worker
     environment:
       CASSANDRA_BROADCAST_ADDRESS: worker1
+      CASSANDRA_INITIAL_TOKEN: 0000000000000000
     expose:
       - 7000
       - 7001
@@ -35,64 +36,13 @@ services:
           - node.role == worker
     environment:
       CASSANDRA_SEEDS: worker1
+      CASSANDRA_INITIAL_TOKEN: 1000000000000000
     depends_on:
       - worker1
     networks:
       janusgraph-network:
         aliases:
           - '{{.Service.Name}}-{{.Task.Slot}}'
-  worker3:
-    image: 127.0.0.1:5000/janusgraph
-    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 60; fi && /docker-entrypoint.sh cassandra -f'
-    volumes:
-      - results:/sgp/results/
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == worker
-    environment:
-      CASSANDRA_SEEDS: worker1
-    depends_on:
-          - worker1
-    networks:
-      janusgraph-network:
-        aliases:
-          - '{{.Service.Name}}-{{.Task.Slot}}'
-
-  worker4:
-    image: 127.0.0.1:5000/janusgraph
-    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 60; fi && /docker-entrypoint.sh cassandra -f'
-    volumes:
-      - results:/sgp/results/
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == worker
-    environment:
-      CASSANDRA_SEEDS: worker1
-    depends_on:
-          - worker1
-    networks:
-      janusgraph-network:
-        aliases:
-          - '{{.Service.Name}}-{{.Task.Slot}}'
-
-  master:
-    image: 127.0.0.1:5000/janusgraph
-    volumes:
-      - datasets:/sgp/datasets/
-      - results:/sgp/results/
-      - parameters:/sgp/parameters/
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
-    networks:
-      - janusgraph-network
-
 networks:
   janusgraph-network:
     driver: overlay
