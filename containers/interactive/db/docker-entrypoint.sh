@@ -32,7 +32,7 @@ JANUSGRAPH_STORAGE_HOSTNAME="$(_ip_address)"
 
 if [ "$JANUSGRAPH_STORAGE_HOSTNAME" ]; then
     _sed-in-place "$JANUSGRAPH_HOME/conf/gremlin-server/janusgraph-cassandra-es-server.properties" \
-        -r 's/^(# )?(storage\.hostname=).*/\2 '"$JANUSGRAPH_STORAGE_HOSTNAME"'/'
+        -r 's/^(# )?(storage\.hostname=).*/\2 '$JANUSGRAPH_STORAGE_HOSTNAME'/'
 fi
 
 # modified using original cassandra entrypoint
@@ -40,7 +40,9 @@ fi
 # first arg is `-f` or `--some-option`
 # or there are no args
 if [ "$#" -eq 0 ] || [ "${1#-}" != "$1" ]; then
-	set -- cassandra -f "$@"
+	# set -- cassandra -f "$@"
+	# to allow multiple background processes to be fired
+	set -- cassandra "@"
 fi
 
 # allow the container to be started with `--user`
@@ -107,4 +109,8 @@ if [ "$1" = 'cassandra' ]; then
 	done
 fi
 
-exec "$@"
+"$@";
+# wait until cassandra starts
+sleep 60;
+# start gremlin-server
+exec "$JANUSGRAPH_HOME/bin/gremlin-server.sh"
