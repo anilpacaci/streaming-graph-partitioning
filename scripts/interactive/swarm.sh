@@ -1,10 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 # default parameters incase swarm.conf is not defined
 PROJECT_NAME="janusgraph"
 
-PL_MASTER_NAME="janusgraph-master"
-PL_WORKER_NAME="janusgraph-worker"
 
 NETWORK_NAME="janusgraph-network"
 
@@ -12,6 +10,7 @@ JANUSGRAPH_IMAGE_TAG="127.0.0.1:5000/janusgraph"
 
 JANUSGRAPH_IMAGE_FILE="../../containers/interactive"
 SERVICE_COMPOSE_FILE="../../containers/interactive/docker-compose-4nodes.yml"
+MASTER_COMPOSE_FILE="../../containers/interactive/docker-compose-master.yml"
 
 SWARM_MANAGER_IP="192.168.152.201"
 
@@ -25,8 +24,8 @@ fi
 
 # set variables
 
-MASTER_SERVICE_NAME="${PROJECT_NAME}"_"${PL_MASTER_NAME}"
-WORKER_SERVICE_NAME="${PROJECT_NAME}"_"${PL_WORKER_NAME}"
+MASTER_SERVICE_NAME="${PROJECT_NAME}"_"${JG_MASTER_NAME}"
+WORKER_SERVICE_NAME="${PROJECT_NAME}"_"${JG_WORKER_NAME}"
 
 create_network () 
 {
@@ -129,15 +128,31 @@ start_service()
 	echo "$ docker stack deploy -c \"${SERVICE_COMPOSE_FILE}\" \"${PROJECT_NAME}\" "
 	printf "\\n"
 	docker stack deploy -c ${SERVICE_COMPOSE_FILE} ${PROJECT_NAME}
+
+	# sleep before checking cluster status
+	sleep 5;
+	
+	while [ $(get_cluster_size) -lt ${JG_WORKER_COUNT} ]
+	do
+		echo "$(get_cluster_size)/${JG_WORKER_COUNT} Cassandra node is up, wait 10 seconds"
+		sleep 10;
+	done
+
+	echo "$ docker stack deploy -c \"${MASTER_COMPOSE_FILE}\" \"${PROJECT_NAME}\" "
+    printf "\\n"
+    docker stack deploy -c ${MASTER_COMPOSE_FILE} ${PROJECT_NAME}
 }
 
 stop_service()
 {
     printf "\\n\\n===> STOP POWERLYRA SERVICE \\n"
 
-    echo "$ docker service rm \"${WORKER_SERVICE_NAME}\" "
-    printf "\\n"
-    docker service rm ${WORKER_SERVICE_NAME}
+	for (( counter=1 ; counter <=JG_WORKER_COUNT ; counter++ ))
+	do
+    	echo "$ docker service rm \"${WORKER_SERVICE_NAME}${counter}\" "
+    	printf "\\n"
+    	docker service rm ${WORKER_SERVICE_NAME}${counter}
+	done
 
 	echo "$ docker service rm \"${MASTER_SERVICE_NAME}\" "
     printf "\\n"
@@ -188,9 +203,16 @@ run_command()
 
 get_cluster_size()
 {
+	func_result="$(run_command janusgraph_worker1 'nodetool status' | grep 'UN' | wc -l)"
+
+    echo "$func_result"
+}
+
+print_cluster_size()
+{
 	printf "\\n\\n===> CASSANDRA # of NODES \\n"
 
-	func_result="$(run_command janusgraph_worker1 'nodetool status' | grep 'UN' | wc -l)"
+	func_result="$(get_cluster_size)"
 
 	echo "$func_result"
 }
@@ -283,7 +305,7 @@ case "$COMMAND" in
 		exit 0
 	;;
 	(size)
-		get_cluster_size
+		print_cluster_size
 		exit 0
 	;;
 	(init)
@@ -306,4 +328,3 @@ case "$COMMAND" in
 		exit 2
 	;;
 esac
-
