@@ -12,7 +12,11 @@ WORKDIR /sgp
 
 # install necessary dependencies for powergraph
 RUN apt-get update &&\
-	apt-get -y install default-jdk gcc openssh-server openmpi-bin python dnsutils sudo
+	apt-get -y install default-jdk gcc openssh-server openmpi-bin python python-pip dnsutils sudo
+
+# install pandas
+RUN pip install --upgrade pip &&\
+    pip install pandas
 
 # copy powerlyra codebase
 COPY powerlyra/ /sgp/powerlyra/
