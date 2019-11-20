@@ -188,26 +188,16 @@ Graph initializeJanus(String propertiesFile) {
                 .get();
         mgmt.commit();
         
-        // finally BLVP ID Index
-        mgmt = (ManagementSystem) janusGraph.openManagement();
-        PropertyKey blid = mgmt.makePropertyKey("bulkLoader.vertex.id").dataType(String.class).make()
-        mgmt.buildIndex("byBulkLoaderVertexId", Vertex.class).addKey(blid).buildCompositeIndex()
-        mgmt.commit()
-
-        mgmt.awaitGraphIndexStatus(janusGraph, "byBulkLoaderVertexId").call();
-
-        mgmt = (ManagementSystem) janusGraph.openManagement();
-        mgmt.updateIndex(mgmt.getGraphIndex("byBulkLoaderVertexId"), SchemaAction.REINDEX)
-                .get();
-        mgmt.commit();
-
     } catch (Exception e) {
         System.out.println("Exception: " + e);
         e.printStackTrace();
+		System.exit(1);
     }
 
     return janusGraph
 }
 
-System.out.ptintln("Initalize a JanusGraphCluster from: " + args[0]);
+System.out.println("Initalize a JanusGraphCluster from: " + args[0]);
 initializeJanus(args[0]);
+System.out.println("Janusgraph initialization is complete");
+System.exit(0);
