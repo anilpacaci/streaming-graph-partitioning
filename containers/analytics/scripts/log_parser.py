@@ -4,6 +4,7 @@ import sys
 import os
 import re
 import csv
+import numpy
 
 def mean(lst): 
     return sum(lst) / len(lst) 
@@ -16,7 +17,7 @@ def aggregate_logs(log_directory, output_csv_file):
 
 	with open(output_csv_file, 'w') as csv_file:
 		fieldnames = ['file', 'algorithm', 'partitions', 'ingress', 'rf', 'total_ingress', 
-		'compute_imbalance', 'total_time', 'total_network']
+		'compute_imbalance', 'li_max', 'li_min', 'li_25', 'li_50', 'li_75', 'total_time', 'total_network']
 		writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 		writer.writeheader()
 
@@ -32,6 +33,11 @@ def aggregate_logs(log_directory, output_csv_file):
 			finalize_time	= 0
 			iterations		= 0
 			compute_balance	= [1]
+			li_max			= 0
+			li_min			= 0
+			li_25			= 0
+			li_50			= 0
+			li_75			= 0
 			gather_call		= 0 
 			apply_call		= 0
 			scatter_call	= 0
@@ -124,7 +130,12 @@ def aggregate_logs(log_directory, output_csv_file):
 					'ingress' : ingress, 
 					'rf' : str(rf), 
 					'total_ingress' : str(ingress_time + finalize_time),
-					'compute_imbalance' : str(max(compute_balance) / mean(compute_balance) ), 
+					'compute_imbalance' : str(max(compute_balance) / mean(compute_balance) ),
+					'li_max' : numpy.percentile(compute_balance, 100),
+					'li_min' : numpy.percentile(compute_balance, 0),
+					'li_25' : numpy.percentile(compute_balance, 25),
+					'li_50' : numpy.percentile(compute_balance, 50),
+					'li_75': numpy.percentile(compute_balance, 75),
 					'total_time' : str(execution_time), 
 					'total_network' : str(network_sent)
 					})
