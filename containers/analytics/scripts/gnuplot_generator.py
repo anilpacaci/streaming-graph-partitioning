@@ -1,8 +1,14 @@
 #!/usr/bin/python
 
-import csv
 import pandas
 import numpy as np
+import sys
+import json
+
+# volumes defined in the docker compose file
+dataset_volume = "/sgp/datasets/"
+result_volume = "/sgp/results/"
+parameters_volume = "/sgp/parameters/"
 
 DEFAULT_PARTITION = 64
 DEFAULT_WORKLOAD = 'pagerank'
@@ -15,10 +21,41 @@ edge_cut_algorithms = ["random_ec", "ldg", "fennel", "metis"]
 workloads = ["pagerank", "sssp", "connected_component"]
 partitions = [8, 16, 32, 64, 128]
 
+# resulting map that stores all dataset and result files
+result_map = {}
+
+# read input arguments
+if len(sys.argv) < 2:
+    print "Supply parameter files for which plots will be generated"
+    sys.exit()
+
+# read input configuration
+for parameter_file in sys.argv[1:]:
+    with open(os.path.join(parameters_volume, parameter_file)) as parameter_handle:
+        parameters_json = json.load(parameter_handle)
+        run_config = parameters_json["runs"]
+        ## read global parameters from the json file
+        dataset_name = run_config["dataset-name"]
+        aggregated_results_filename = os.path.join(result_volume, run_config["result-file"])
+        if os.path.exists(aggregated_results_filename) is not True:
+            print "{} does not have a valid results file {}".format(dataset_name, aggregated_results_filename)
+            continue
+        aggregated_results = pandas.read_csv(aggregated_results_filename, header=0)
+        result_map[dataset_name] = aggregated_results
+
+# now iterate over the result_map and create gnuplot data csvs for each result file
+
+
 ukdata = pandas.read_csv('/home/apacaci/experiments/powerlyra/logs/uk-li-percentile.csv', header=0)
 # TODO: load-imbalance data could be in a separate csv. Check or update your existing log_parser so it is there by default
 
 # generate rf-communication time figures
+for dataset_name in result_map:
+    dataset = result_map[dataset_name]
+
+
+
+
 for workload in workloads:
     # create new data frame
     newDF = pandas.DataFrame(columns=['vc', 'Vertex-cut', 'hc', 'Hybrid-cut', 'ec', 'Edge-cut'])

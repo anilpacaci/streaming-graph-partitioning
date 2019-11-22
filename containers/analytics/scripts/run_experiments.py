@@ -163,6 +163,8 @@ with open(parameters_file, 'rb') as parameters_handle:
 
 	aggregate_logs(log_folder, aggregated_results_file)
 
+	print "Aggregated results for the dataset {} is written into {}".format(dataset_name, aggregated_results_file)
+
 	print "!!! END"
 
 
