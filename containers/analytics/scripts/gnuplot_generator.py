@@ -1,9 +1,10 @@
 #!/usr/bin/python
 
 import pandas
-import numpy as np
 import sys
 import json
+
+import plot_library
 
 # volumes defined in the docker compose file
 dataset_volume = "/sgp/datasets/"
@@ -44,32 +45,8 @@ for parameter_file in sys.argv[1:]:
         result_map[dataset_name] = aggregated_results
 
 # now iterate over the result_map and create gnuplot data csvs for each result file
-
-
-ukdata = pandas.read_csv('/home/apacaci/experiments/powerlyra/logs/uk-li-percentile.csv', header=0)
-# TODO: load-imbalance data could be in a separate csv. Check or update your existing log_parser so it is there by default
-
-# generate rf-communication time figures
-for dataset_name in result_map:
-    dataset = result_map[dataset_name]
-
-
-
-
-for workload in workloads:
-    # create new data frame
-    newDF = pandas.DataFrame(columns=['vc', 'Vertex-cut', 'hc', 'Hybrid-cut', 'ec', 'Edge-cut'])
-    # extract data from the master table
-    extracteddata = ukdata[ukdata['algorithm'] == workload][['ingress', 'rf', 'total_network']]
-    for index, row in extracteddata.iterrows():
-        if row['ingress'] in vertex_cut_algorithms:
-            newDF = newDF.append({'vc' : row['rf'], 'Vertex-cut' : row['total_network']}, ignore_index=True)
-        elif row['ingress'] in hybrid_cut_algorithms:
-            newDF = newDF.append({'hc' : row['rf'], 'Hybrid-cut' : row['total_network']}, ignore_index=True)
-        elif row['ingress'] in edge_cut_algorithms:
-            newDF = newDF.append({'ec' : row['rf'], 'Edge-cut' : row['total_network']}, ignore_index=True)
-    # export the data in csv for gnuplot
-    newDF.to_csv('rf-comm-pr-uk.csv', sep=',', index=False)
+for dataset_name in aggregated_results_filename:
+    plot_library.generate_rf_communication(dataset_name, result_map[dataset_name])
 
 # generate load imbalance
 for workload in workloads:
