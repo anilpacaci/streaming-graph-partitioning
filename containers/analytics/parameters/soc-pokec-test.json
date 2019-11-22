@@ -1,6 +1,7 @@
 {
 	"name" : "soc-pokec",
 	"runs" : {
+		"dataset-name" : "soc-pokec",
 		"snap-dataset" : "soc-pokec/soc-pokec-snap-combined.txt",
 		"adj-dataset" : "soc-pokec/soc-pokec-adjacency-combined.txt",
 		"log-folder" : "soc-pokec-logs",
