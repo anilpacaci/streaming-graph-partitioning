@@ -125,6 +125,7 @@ with open(parameters_file, 'rb') as parameters_handle:
 	run_config = parameters_json["runs"]
 	
 	## read global parameters from the json file
+	dataset_name = run_config["dataset-name"]
 	snap_dataset = os.path.join(dataset_volume, run_config["snap-dataset"])
 	adj_dataset  = os.path.join(dataset_volume, run_config["adj-dataset"])
 	log_folder = os.path.join(result_volume, run_config["log-folder"])
