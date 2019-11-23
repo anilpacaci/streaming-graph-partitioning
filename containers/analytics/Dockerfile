@@ -16,7 +16,7 @@ RUN apt-get update &&\
 
 # install pandas
 RUN pip install --upgrade pip &&\
-    pip install pandas
+    python -m pip install pandas
 
 # copy powerlyra codebase
 COPY powerlyra/ /sgp/powerlyra/
