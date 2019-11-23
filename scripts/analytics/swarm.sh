@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-$ default parameters incase swarm.conf is not defined
+# default parameters incase swarm.conf is not defined
 PROJECT_NAME="powerlyra"
 
 PL_MASTER_NAME="powerlyra-master"
@@ -153,6 +153,35 @@ run_experiments()
 }
 
 
+generate_plots()
+{
+    printf "\\n\\n ===> GENERATE PLOTS"
+    printf "\\n"
+    if [ $# -eq 0 ] ; then
+        echo "Supply relative path of the configuration file under /sgp/parameters/"
+        exit 1
+    fi
+
+    # shift once to eliminate the first argument
+    shift
+    PARAMS=("$@")
+
+    echo "Result plots will be generated for configurations:"
+
+    for PARAM in "${PARAMS[@]}"
+    do
+        echo "Config file: ${PARAM}"
+    done
+
+    echo "\"${PARAMS[*]}\""
+
+    echo "docker exec -u mpi -it \"${MASTER_SERVICE_NAME}\".1.\$\(docker service ps -f name=\"${MASTER_SERVICE_NAME}\".1 \"${MASTER_SERVICE_NAME}\" -q --no-trunc \| head -n1\) /sgp/scripts/gnuplot_generator.py ${PARAMS[*]} "
+    printf "\\n"
+    docker exec -u mpi -it ${MASTER_SERVICE_NAME}.1.$(docker service ps -f name=${MASTER_SERVICE_NAME}.1 ${MASTER_SERVICE_NAME} -q --no-trunc | head -n1) /sgp/scripts/gnuplot_generator.py ${PARAMS[*]}
+
+}
+
+
 usage()
 {
     echo ' More info: https://github.com/anilpacaci/streaming-graph-partitioning'
@@ -182,17 +211,22 @@ usage()
     echo ""
     echo "		runs a set of experiments described in the config file"
     echo ""
-    echo "	5. Stop PowerLyra container:"
+    echo "	5. Run experiments:"
+    echo "		$ ./swarm.sh plot [config_file_1, ..., config_file_n]"
+    echo ""
+    echo "		generates result plots from the results of each experiment given by config files"
+    echo ""
+    echo "	6. Stop PowerLyra container:"
     echo "		$ ./swarm.sh stop"
     echo ""
     echo "		stops containers in the machines specified in the host file"
     echo ""
-    echo "	6. Tear down docker cluster:"
+    echo "	7. Tear down docker cluster:"
     echo "		$ ./swarm.sh destroy"
     echo ""
     echo "		removes the overlay network and forces nodes to leave the swarm"
     echo ""
-    echo "	7. Print this help message:"
+    echo "	8. Print this help message:"
     echo "		$ ./swarm.sh usage"
     echo ""
 }
@@ -202,6 +236,7 @@ usage()
 
 COMMAND=$1
 PARAM=$2
+PARAMS=("$@")
 
 case "$COMMAND" in
 	(start) 
@@ -225,6 +260,15 @@ case "$COMMAND" in
 		run_experiments $PARAM
 		exit 0
 	;;
+	(plot)
+        if [ $# -eq 1 ]
+        then
+            echo "usage: ${0} ${COMMAND} [config_file_1, ..., config_file_n]"
+            exit 2
+        fi
+        generate_plots "${PARAMS[@]}"
+        exit 0
+    ;;
 	(init)
         init_swarm $PARAM
 		create_network
@@ -240,9 +284,8 @@ case "$COMMAND" in
 		exit 0
 	;;
 	(*)
-		echo "ERROR: unknown parameter \"$COMMAND\""
+		echo "ERROR: unknown parameter \"${COMMAND}\""
 		usage
 		exit 2
 	;;
 esac
-

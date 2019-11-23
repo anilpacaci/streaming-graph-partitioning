@@ -45,39 +45,19 @@ for parameter_file in sys.argv[1:]:
         result_map[dataset_name] = aggregated_results
 
 # now iterate over the result_map and create gnuplot data csvs for each result file
-for dataset_name in aggregated_results_filename:
+for dataset_name in result_map:
     plot_library.generate_rf_communication(dataset_name, result_map[dataset_name])
 
 # generate load imbalance
-for workload in workloads:
-    # create nre data frame
-    newDF = pandas.DataFrame(columns=['ingress', 'min', 'max', '25', '50', '75'])
-    # extract data from the master table
-    extracteddata = ukdata[(ukdata['algorithm'] == workload) & (ukdata['partitions'] == DEFAULT_PARTITION)][['ingress', 'li_min', 'li_max', 'li_25', 'li_50', 'li_75']]
-    for index, row in extracteddata.iterrows():
-        newDF = newDF.append({'ingress': row['ingress'], 'min' : row['li_min'], 'max' : row['li_max'], '25' : row['li_25'], '50' : row['li_50'], '75' : row['li_75']}, ignore_index=True)
-    # export the data in csv for gnuplot
-    newDF.to_csv('uk-li-percentile', sep=',', index=False)
+for dataset_name in result_map:
+    plot_library.generate_load_imbalance(dataset_name, result_map[dataset_name])
 
 # generate replication factor data
 # no need to iterate over workloads, just report PageRank
-newDF = pandas.DataFrame(columns=['partitions'] + sgp_algorithms)
-for partition in partitions:
-    extracteddata = ukdata[(ukdata['algorithm'] == DEFAULT_WORKLOAD) & (ukdata['partitions'] == partition)][['ingress', 'rf']]
-    sgpToReplicationFactor = dict(zip(extracteddata.ingress, extracteddata.rf))
-    sgpToReplicationFactor['partitions'] = partition
-    newDF = newDF.append(sgpToReplicationFactor, ignore_index=True)
-# export the data in csv for gnuplot
-newDF.to_csv('rf-uk.csv', sep=',', index=False)
+for dataset_name in result_map:
+    plot_library.generate_rf(dataset_name, result_map[dataset_name])
 
 # generate execution time scripts
 # line graph where there is a file for each dataset/workload
-for workload in workloads:
-    newDF = pandas.DataFrame(columns=['partitions'] + sgp_algorithms)
-    for partition in partitions:
-        extracteddata = ukdata[(ukdata['algorithm'] == workload) & (ukdata['partitions'] == partition)][['ingress', 'total_time']]
-        sgpToTime = dict(zip(extracteddata.ingress, extracteddata.total_time))
-        sgpToTime['partitions'] = partition
-        newDF = newDF.append(sgpToTime, ignore_index=True)
-    # export data in csv for gnuplot
-    newDF.to_csv('uk-' + workload + 'line.csv', sep=',', index=False)
+for dataset_name in result_map:
+    plot_library.generate_time(dataset_name, result_map[dataset_name])

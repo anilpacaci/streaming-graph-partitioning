@@ -11,6 +11,7 @@ parameters_volume = "/sgp/parameters/"
 RF_COMMUNICATION_SCRIPT = '/sgp/scripts/gnuplot/rf-comm.gnu'
 RF_SCRIPT = 'sgp/scripts/gnuplot/rf.gnu'
 LI_PERCENTILE_SCRIPT = 'sgp/scripts/gnuplot/li-percentile.gnu'
+TIME_LINE_SCRIPT = 'sgp/scripts/gnuplot/time-line.gnu'
 
 DEFAULT_PARTITION = 64
 DEFAULT_WORKLOAD = 'pagerank'
@@ -45,7 +46,7 @@ def generate_rf_communication(dataset_name, dataset):
                 newDF = newDF.append({'hc' : row['rf'], 'Hybrid-cut' : row['total_network']}, ignore_index=True)
             elif row['ingress'] in edge_cut_algorithms:
                 newDF = newDF.append({'ec' : row['rf'], 'Edge-cut' : row['total_network']}, ignore_index=True)
-        # export the data in csv for gnuplot
+        # generate plot using the generated data
         result_dataset_filename =  'rf-comm-{}-{}'.format(workload, dataset_name)
         output_filename = 'rf-comm-{}-{}'.format(workload, dataset_name)
         gnuplot_call(RF_COMMUNICATION_SCRIPT, newDF, result_dataset_filename, output_filename)
@@ -58,7 +59,35 @@ def generate_load_imbalance(dataset_name, dataset):
     extracteddata = dataset[(dataset['algorithm'] == DEFAULT_WORKLOAD) & (dataset['partitions'] == DEFAULT_PARTITION)][['ingress', 'li_min', 'li_max', 'li_25', 'li_50', 'li_75']]
     for index, row in extracteddata.iterrows():
         newDF = newDF.append({'ingress': row['ingress'], 'min' : row['li_min'], 'max' : row['li_max'], '25' : row['li_25'], '50' : row['li_50'], '75' : row['li_75']}, ignore_index=True)
-    # export the data in csv for gnuplot
+    # generate plot using the generated data
     result_dataset_filename =  'li-percentile-{}-{}'.format(DEFAULT_WORKLOAD, dataset_name)
     output_filename = 'li-percentile-{}-{}'.format(DEFAULT_WORKLOAD, dataset_name)
     gnuplot_call(LI_PERCENTILE_SCRIPT, newDF, result_dataset_filename, output_filename)
+
+# plot replication factor graph, requires a map of datasets
+def generate_rf(dataset_name, dataset):
+    # create new data frame
+    newDF = pandas.DataFrame(columns=['partitions'] + sgp_algorithms)
+    for partition in partitions:
+        extracteddata = dataset[(dataset['algorithm'] == DEFAULT_WORKLOAD) & (dataset['partitions'] == partition)][['ingress', 'rf']]
+        sgpToReplicationFactor = dict(zip(extracteddata.ingress, extracteddata.rf))
+        sgpToReplicationFactor['partitions'] = partition
+        newDF = newDF.append(sgpToReplicationFactor, ignore_index=True)
+    # generate plot using the generated data
+    result_dataset_filename =  'rf-{}'.format(dataset_name)
+    output_filename = 'rf-{}'.format(dataset_name)
+    gnuplot_call(LI_PERCENTILE_SCRIPT, newDF, result_dataset_filename, output_filename)
+
+# plot time-line graph
+def generate_time(dataset_name, dataset):
+    for workload in workloads:
+        newDF = pandas.DataFrame(columns=['partitions'] + sgp_algorithms)
+        for partition in partitions:
+            extracteddata = dataset[(dataset['algorithm'] == workload) & (dataset['partitions'] == partition)][['ingress', 'total_time']]
+            sgpToTime = dict(zip(extracteddata.ingress, extracteddata.total_time))
+            sgpToTime['partitions'] = partition
+            newDF = newDF.append(sgpToTime, ignore_index=True)
+        # generate plot using the generated data
+        result_dataset_filename =  'time-line-{}-{}'.format(DEFAULT_WORKLOAD, dataset_name)
+        output_filename = 'time-line-{}-{}'.format(DEFAULT_WORKLOAD, dataset_name)
+        gnuplot_call(TIME_LINE_SCRIPT, newDF, result_dataset_filename, output_filename)
