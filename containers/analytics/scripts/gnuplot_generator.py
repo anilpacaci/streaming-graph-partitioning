@@ -3,6 +3,7 @@
 import pandas
 import sys
 import json
+import os
 
 import plot_library
 
@@ -32,6 +33,7 @@ if len(sys.argv) < 2:
 
 # read input configuration
 for parameter_file in sys.argv[1:]:
+    print "Read parameter file {}".format(parameter_file)
     with open(os.path.join(parameters_volume, parameter_file)) as parameter_handle:
         parameters_json = json.load(parameter_handle)
         run_config = parameters_json["runs"]
