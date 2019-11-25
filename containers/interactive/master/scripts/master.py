@@ -2,7 +2,6 @@
 
 # master script that orchestrates execution of data loading / run controlling / result generation
 
-import pandas
 import sys
 import json
 import os
@@ -21,39 +20,35 @@ partitions = [4, 8, 16, 32]
 result_map = {}
 
 # read input arguments
-if len(sys.argv) < 2:
+if len(sys.argv) < 3:
     print "Supply parameter files for which plots will be generated"
     sys.exit()
 
-# read input configuration
-for parameter_file in sys.argv[1:]:
-    print "Read parameter file {}".format(parameter_file)
-    with open(os.path.join(parameters_volume, parameter_file)) as parameter_handle:
-        parameters_json = json.load(parameter_handle)
-        run_config = parameters_json["runs"]
-        ## read global parameters from the json file
-        dataset_name = run_config["dataset-name"]
-        aggregated_results_filename = os.path.join(result_volume, run_config["result-file"])
-        if os.path.exists(aggregated_results_filename) is not True:
-            print "{} does not have a valid results file {}".format(dataset_name, aggregated_results_filename)
-            continue
-        aggregated_results = pandas.read_csv(aggregated_results_filename, header=0)
-        result_map[dataset_name] = aggregated_results
+COMMAND = sys.argv[1]
+PARAMATER_FILE = sys.argv[2]
+PARAMETER_FILES = sys.argv[1:]
 
-# now iterate over the result_map and create gnuplot data csvs for each result file
-for dataset_name in result_map:
-    plot_library.generate_rf_communication(dataset_name, result_map[dataset_name])
+# populates the database from given configuration file
+# in a nutshell it calls partitioning info initialization scripts, then db loader script
+def populate_db(parameter_file):
+    # load partitioning information
+    print '/sgp/janusgraph/bin/gremlin.sh -e /sgp/scripts/SNBParser.groovy {}'.format(parameter_file)
+    subprocess.call(['/sgp/janusgraph/bin/gremlin.sh', '-e', '/sgp/scripts/ADJParser.groovy', parameter_file])
 
-# generate load imbalance
-for dataset_name in result_map:
-    plot_library.generate_load_imbalance(dataset_name, result_map[dataset_name])
 
-# generate replication factor data
-# no need to iterate over workloads, just report PageRank
-for dataset_name in result_map:
-    plot_library.generate_rf(dataset_name, result_map[dataset_name])
 
-# generate execution time scripts
-# line graph where there is a file for each dataset/workload
-for dataset_name in result_map:
-    plot_library.generate_time(dataset_name, result_map[dataset_name])
+if COMMAND == 'load':
+    full_parameter_path = os.path.join(parameters_volume, PARAMATER_FILE)
+    if not os.path.exists(full_parameter_path):
+        # exit as there is no parameter file in the parameter volume
+        print "Parameter file {} does not exist in the parameter volume {}".format(PARAMATER_FILE, parameters_volume)
+        sys.exit(2)
+    populate_db(PARAMATER_FILE)
+elif COMMAND == 'run':
+    full_parameter_path = os.path.join(parameters_volume, PARAMATER_FILE)
+    if not os.path.exists(full_parameter_path):
+        # exit as there is no parameter file in the parameter volume
+        print "Parameter file {} does not exist in the parameter volume {}".format(PARAMATER_FILE, parameters_volume)
+        sys.exit(2)
+
+

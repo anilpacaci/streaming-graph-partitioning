@@ -137,20 +137,23 @@ class ADJParser {
         }
     }
 
-    static class GraphLoader implements Callable {
+
+    static class ADJGraphLoader implements Callable {
 
         JanusGraph graph
         SharedGraphReader graphReader
         ElementType elementType
         AtomicLong counter
         ConcurrentHashMap<String, Long> idMapping
+        boolean isGraphSNB
 
-        GraphLoader(JanusGraph graph, SharedGraphReader graphReader, ElementType elementType, Map<String, Long> idMapping) {
+        ADJGraphLoader(JanusGraph graph, SharedGraphReader graphReader, ElementType elementType, Map<String, Long> idMapping, boolean isGraphSNB) {
             this.graph = graph
             this.graphReader = graphReader
             this.elementType = elementType
             this.counter = graphReader.getCounter()
             this.idMapping = idMapping
+            this.isGraphSNB = isGraphSNB
         }
 
         Vertex addVertex(String identifier) {
@@ -172,8 +175,121 @@ class ADJParser {
             return vertex;
         }
 
-        @Override
-        Object call() {
+
+        void snbLoader() {
+            SimpleDateFormat birthdayDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            birthdayDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+            SimpleDateFormat creationDateDateFormat =
+                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+            creationDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"))
+            SimpleDateFormat joinDateDateFormat =
+                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+            joinDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+            String[] colNames = graphReader.getColNames()
+            String[] fileNameParts = graphReader.getFileNameParts()
+            String entityName = fileNameParts[0];
+
+            String edgeLabel = elementType.equals(ElementType.EDGE) ? fileNameParts[1] : null
+            String v2EntityName = elementType.equals(ElementType.EDGE) ? fileNameParts[2] : null
+
+            boolean txSucceeded;
+            long txFailCount;
+
+            while( graphReader.hasNext() ) {
+                List<String> lines = graphReader.next()
+                if(lines == null) {
+                    // keep polling until queue is empty
+                    continue
+                }
+                txSucceeded = false;
+                txFailCount = 0;
+                while (!txSucceeded) {
+                    for (int i = 0; i < lines.size(); i++) {
+                        try {
+                            String line = lines.get(i);
+                            String[] colVals = line.split("\\|");
+
+                            if (elementType == ElementType.VERTEX) {
+                                Map<Object, Object> propertiesMap = new HashMap<>();
+
+                                String identifier;
+                                for (int j = 0; j < colVals.length; ++j) {
+                                    if (colNames[j].equals("id")) {
+                                        identifier = entityName + ":" + colVals[j]
+                                        propertiesMap.put("iid", identifier);
+                                        propertiesMap.put("iid_long", Long.parseLong(colVals[j]))
+                                    }
+                                }
+                                propertiesMap.put(T.label, entityName);
+
+                                List<Object> keyValues = new ArrayList<>();
+                                propertiesMap.forEach { key, val ->
+                                    keyValues.add(key);
+                                    keyValues.add(val);
+                                }
+
+                                Vertex vertex = graph.addVertex(keyValues.toArray());
+
+                                //populate IDMapping if enabled
+                                Long id = (Long) vertex.id()
+                                idMapping.put(identifier, id)
+
+                            } else if (elementType == ElementType.PROPERTY) {
+                                GraphTraversalSource g = graph.traversal();
+
+                                Vertex vertex = null;
+                                Long id = idMapping.get(entityName + ":" + colVals[0]);
+                                vertex = g.V(id).next()
+
+                                for (int j = 1; j < colVals.length; ++j) {
+                                    vertex.property(VertexProperty.Cardinality.list, colNames[j],
+                                            colVals[j]);
+                                }
+
+                            } else {
+                                GraphTraversalSource g = graph.traversal();
+                                Vertex vertex1, vertex2;
+
+                                Long id1 = idMapping.get(entityName + ":" + colVals[0])
+                                Long id2 = idMapping.get(v2EntityName + ":" + colVals[1])
+                                vertex1 = g.V(id1).next()
+                                vertex2 = g.V(id2).next()
+
+                                List<Object> keyValues = new ArrayList<>();
+
+                                vertex1.addEdge(edgeLabel, vertex2, keyValues.toArray());
+
+                                if (edgeLabel.equals("knows")) {
+                                    //TODO: this is implementation spefic, parameterize this
+                                    vertex2.addEdge(edgeLabel, vertex1, keyValues.toArray());
+                                }
+                            }
+
+                            this.counter.incrementAndGet()
+                        } catch (Exception e) {
+                            println(String.format("Inset failed on file: %s, index: %s, reason: ", graphReader.getFileName(), i, e.printStackTrace()))
+                        }
+                    }
+                    try {
+                        graph.tx().commit();
+                        txSucceeded = true;
+                    } catch (Exception e) {
+                        txFailCount++;
+                        println("failed")
+                    }
+
+                    if (txFailCount > TX_MAX_RETRIES) {
+                        throw new RuntimeException(String.format(
+                                "ERROR: Transaction failed %d times (file lines [%d,%d]), " +
+                                        "aborting...", txFailCount, startIndex, endIndex - 1));
+                    }
+                }
+            }
+            // means that no more lines to return
+            return
+        }
+
+        void adjLoader() {
             SimpleDateFormat birthdayDateFormat = new SimpleDateFormat("yyyy-MM-dd");
             birthdayDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
             SimpleDateFormat creationDateDateFormat =
@@ -285,6 +401,15 @@ class ADJParser {
             }
             // means that no more lines to return
         }
+
+        @Override
+        Object call() {
+            if(isGraphSNB) {
+                snbLoader()
+            } else {
+                adjLoader()
+            }
+        }
     }
 
     static void loadGraph(JanusGraph graph, String configurationFile) throws IOException {
@@ -297,8 +422,26 @@ class ADJParser {
         //import partition lookup
         partitionLookupImport(configuration)
 
+
+        // Full paths for edge and vertex files
+        String nodeFile;
+        String edgeFile;
+
         // WARN, we use the same file for nodes and edges, for nodes we simply rely on first vertex id on each line
-        String inputAdjFile = configuration.getString("input.base")
+        String inputBaseDir = configuration.getString("input.base")
+
+        // SNB graphs have seperate edge and vertex files
+        boolean isGraphSNB = configuration.getBoolean("graph.snb")
+
+
+        // snb graph has multiple files
+        if(isGraphSNB) {
+            nodeFile = Paths.get(inputBaseDir, "person_0_0.csV")
+            edgeFile = Paths.get(inputBaseDir, "person_knows_person_0_0.csv")
+        } else {
+            nodeFile = inputBaseDir
+            edgeFile = inputBaseDir
+        }
 
         int threadCount = configuration.getInt("thread.count")
         int batchSize = configuration.getInt("batch.size")
@@ -310,20 +453,20 @@ class ADJParser {
         ExecutorService executor = Executors.newFixedThreadPool(threadCount)
 
         try {
-            SharedGraphReader graphReader = new SharedGraphReader(Paths.get(inputAdjFile), batchSize, progReportPeriod)
-            List<GraphLoader> tasks = new ArrayList<GraphLoader>()
+            SharedGraphReader graphReader = new SharedGraphReader(Paths.get(nodeFile), batchSize, progReportPeriod)
+            List<ADJGraphLoader> tasks = new ArrayList<ADJGraphLoader>()
             for (int i = 0; i < threadCount; i++) {
-                tasks.add(new GraphLoader(graph, graphReader, ElementType.VERTEX, idMapping))
+                tasks.add(new ADJGraphLoader(graph, graphReader, ElementType.VERTEX, idMapping, isGraphSNB))
             }
             graphReader.start()
             executor.invokeAll(tasks)
             graphReader.stop()
 
 
-            graphReader = new SharedGraphReader(Paths.get(inputAdjFile), batchSize, progReportPeriod)
-            tasks = new ArrayList<GraphLoader>()
+            graphReader = new SharedGraphReader(Paths.get(edgeFile), batchSize, progReportPeriod)
+            tasks = new ArrayList<ADJGraphLoader>()
             for (int i = 0; i < threadCount; i++) {
-                tasks.add(new GraphLoader(graph, graphReader, ElementType.EDGE, idMapping))
+                tasks.add(new ADJGraphLoader(graph, graphReader, ElementType.EDGE, idMapping, isGraphSNB))
             }
             graphReader.start()
             executor.invokeAll(tasks)
@@ -512,3 +655,10 @@ class ADJParser {
 		}
     }
 }
+
+System.out.println("Populate partitioning info using configuration: " + args[0]);
+janusGraph = JanusGraphFactory.open('/sgp/scripts/conf/janusgraph-cassandra-es-server.properties')
+ADJParser.loadGraph(janusGraph, args[0]);
+System.out.println("Partitioning info is complete!");
+System.exit(0);
+
