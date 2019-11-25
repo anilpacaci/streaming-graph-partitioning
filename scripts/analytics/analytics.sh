@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# default parameters incase swarm.conf is not defined
+# default parameters incase interactive.conf is not defined
 PROJECT_NAME="powerlyra"
 
 PL_MASTER_NAME="powerlyra-master"
@@ -19,8 +19,8 @@ DOCKER_WORKER_NODES="/home/apacaci/docker_machines"
 
 
 # include conf file if it is defined
-if [ -f ./swarm.conf ]; then
-    . ./swarm.conf
+if [ -f ./analytics.conf ]; then
+    . analytics.conf
 fi
 
 # set variables
@@ -191,43 +191,43 @@ usage()
 
     echo "To run a set of experiments:"
     echo "	1. Initialize the docker cluster in swarm mode"
-    echo "		$ ./swarm.sh init"
+    echo "		$ ./analytics.sh init"
     echo ""
     echo "		starts a swarm master that is advertised with given IP and"
     echo "		and creates an overlay network "
     echo ""
     echo "	2. Build the PowerLyra container and deploy to local registry:"
-    echo "		$ ./swarm.sh build"
+    echo "		$ ./analytics.sh build"
     echo ""
     echo "		builds and deploys the specified docker image"
     echo ""
     echo "	3. Start PowerLyra cluster:"
-    echo "		$ ./swarm.sh start"
+    echo "		$ ./analytics.sh start"
     echo ""
     echo "		starts a container in the machines specified in the host file"
     echo ""
     echo "	4. Run experiments:"
-    echo "		$ ./swarm.sh run config_file"
+    echo "		$ ./analytics.sh run config_file"
     echo ""
     echo "		runs a set of experiments described in the config file"
     echo ""
     echo "	5. Run experiments:"
-    echo "		$ ./swarm.sh plot [config_file_1, ..., config_file_n]"
+    echo "		$ ./analytics.sh plot [config_file_1, ..., config_file_n]"
     echo ""
     echo "		generates result plots from the results of each experiment given by config files"
     echo ""
     echo "	6. Stop PowerLyra container:"
-    echo "		$ ./swarm.sh stop"
+    echo "		$ ./analytics.sh stop"
     echo ""
     echo "		stops containers in the machines specified in the host file"
     echo ""
     echo "	7. Tear down docker cluster:"
-    echo "		$ ./swarm.sh destroy"
+    echo "		$ ./analytics.sh destroy"
     echo ""
     echo "		removes the overlay network and forces nodes to leave the swarm"
     echo ""
     echo "	8. Print this help message:"
-    echo "		$ ./swarm.sh usage"
+    echo "		$ ./analytics.sh usage"
     echo ""
 }
 
