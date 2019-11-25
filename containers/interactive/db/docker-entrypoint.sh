@@ -120,7 +120,14 @@ fi
 /usr/sbin/sshd -D &
 # run the original cassandra command
 "$@";
-# wait until cassandra starts
-sleep 60;
+
+#check if cassandra succesfully started
+while [ $(nodetool status | grep "$(_ip_address)" | grep UN | wc -l) -lt 1 ]
+do
+    echo "Cassandra is not up, waiting 30 seconds"
+    sleep 30;
+    "$@";
+done
+
 # start gremlin-server
 exec "$JANUSGRAPH_HOME/bin/gremlin-server.sh"

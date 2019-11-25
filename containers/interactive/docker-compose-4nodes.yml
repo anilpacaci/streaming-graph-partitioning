@@ -14,7 +14,7 @@ services:
     environment:
       CASSANDRA_BROADCAST_ADDRESS: worker1
       CASSANDRA_INITIAL_TOKEN: 0000000000000000
-      JANUSGRAPH_CLUSTER_SIZE: 2
+      JANUSGRAPH_CLUSTER_SIZE: 4
     expose:
       - 7000
       - 7001
@@ -27,7 +27,7 @@ services:
           - '{{.Service.Name}}-{{.Task.Slot}}'
   worker2:
     image: 127.0.0.1:5000/janusgraph
-    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 60; fi && /docker-entrypoint.sh cassandra'
+    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 30; fi && /docker-entrypoint.sh cassandra'
     volumes:
       - results:/sgp/results/
     deploy:
@@ -38,7 +38,7 @@ services:
     environment:
       CASSANDRA_SEEDS: worker1
       CASSANDRA_INITIAL_TOKEN: 4000000000000000
-      JANUSGRAPH_CLUSTER_SIZE: 2
+      JANUSGRAPH_CLUSTER_SIZE: 4
     depends_on:
       - worker1
     networks:
@@ -47,7 +47,7 @@ services:
           - '{{.Service.Name}}-{{.Task.Slot}}'
   worker3:
     image: 127.0.0.1:5000/janusgraph
-    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 60; fi && /docker-entrypoint.sh cassandra'
+    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 30; fi && /docker-entrypoint.sh cassandra'
     volumes:
       - results:/sgp/results/
     deploy:
@@ -67,7 +67,7 @@ services:
           - '{{.Service.Name}}-{{.Task.Slot}}'
   worker4:
     image: 127.0.0.1:5000/janusgraph
-    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 60; fi && /docker-entrypoint.sh cassandra'
+    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 30sta; fi && /docker-entrypoint.sh cassandra'
     volumes:
       - results:/sgp/results/
     deploy:
