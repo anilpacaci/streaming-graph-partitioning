@@ -75,28 +75,33 @@ class ADJParser {
         int batchSize
         LineIterator it
         String fileName
+        String[] colNames
         long lineCount
         long startIndex
         int reportingPeriod
         Timer timer
         Thread writerThread
+        boolean isGraphSNB
 
         ArrayBlockingQueue<List<String>> batchQueue
         AtomicBoolean isExhausted
         AtomicLong counter
 
-        SharedGraphReader(Path filePath, int batchSize, reportingPeriod) {
+        SharedGraphReader(Path filePath, int batchSize, reportingPeriod, boolean isGraphSNB) {
             this.batchSize = batchSize
             this.reportingPeriod = reportingPeriod
 
             this.it = FileUtils.lineIterator(filePath.toFile(), "UTF-8")
             this.fileName = filePath.getFileName().toString()
+            this.colNames = isGraphSNB ? it.nextLine().split("\\|") : []
             this.lineCount = 0
             this.startIndex = 0
 
+            this.isGraphSNB = isGraphSNB
+
             this.counter = new AtomicLong(0)
             this.isExhausted = new AtomicBoolean(false)
-            this.batchQueue = new ArrayBlockingQueue<>(100)
+            this.batchQueue = new ArrayBlockingQueue<>(100 * batchSize)
 
             this.timer = new Timer()
         }
@@ -198,11 +203,8 @@ class ADJParser {
                     new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             joinDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
             String[] colNames = graphReader.getColNames()
-            String[] fileNameParts = graphReader.getFileNameParts()
-            String entityName = fileNameParts[0];
 
-            String edgeLabel = elementType.equals(ElementType.EDGE) ? fileNameParts[1] : null
-            String v2EntityName = elementType.equals(ElementType.EDGE) ? fileNameParts[2] : null
+            String edgeLabel = knows
 
             boolean txSucceeded;
             long txFailCount;
@@ -227,20 +229,11 @@ class ADJParser {
                                 String identifier;
                                 for (int j = 0; j < colVals.length; ++j) {
                                     if (colNames[j].equals("id")) {
-                                        identifier = entityName + ":" + colVals[j]
-                                        propertiesMap.put("iid", identifier);
-                                        propertiesMap.put("iid_long", Long.parseLong(colVals[j]))
+                                        identifier = colVals[j]
                                     }
                                 }
-                                propertiesMap.put(T.label, entityName);
 
-                                List<Object> keyValues = new ArrayList<>();
-                                propertiesMap.forEach { key, val ->
-                                    keyValues.add(key);
-                                    keyValues.add(val);
-                                }
-
-                                Vertex vertex = graph.addVertex(keyValues.toArray());
+                                Vertex vertex = addVertex(identifier)
 
                                 //populate IDMapping if enabled
                                 Long id = (Long) vertex.id()
@@ -250,7 +243,7 @@ class ADJParser {
                                 GraphTraversalSource g = graph.traversal();
 
                                 Vertex vertex = null;
-                                Long id = idMapping.get(entityName + ":" + colVals[0]);
+                                Long id = idMapping.get(colVals[0]);
                                 vertex = g.V(id).next()
 
                                 for (int j = 1; j < colVals.length; ++j) {
@@ -262,8 +255,8 @@ class ADJParser {
                                 GraphTraversalSource g = graph.traversal();
                                 Vertex vertex1, vertex2;
 
-                                Long id1 = idMapping.get(entityName + ":" + colVals[0])
-                                Long id2 = idMapping.get(v2EntityName + ":" + colVals[1])
+                                Long id1 = idMapping.get(colVals[0])
+                                Long id2 = idMapping.get(colVals[1])
                                 vertex1 = g.V(id1).next()
                                 vertex2 = g.V(id2).next()
 
@@ -416,10 +409,14 @@ class ADJParser {
 
         @Override
         Object call() {
-            if(isGraphSNB) {
-                snbLoader()
-            } else {
-                adjLoader()
+            try {
+                if (isGraphSNB) {
+                    snbLoader()
+                } else {
+                    adjLoader()
+                }
+            } catch(Exception e) {
+                System.out.println("Graph Loader failed due to", e.printStackTrace())
             }
         }
     }
