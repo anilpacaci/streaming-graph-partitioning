@@ -25,6 +25,16 @@ _sed-in-place() {
     rm "$tempFile"
 }
 
+_sed-append() {
+	local filename="$1"; shift
+	local tempFile
+	tempFile="$(mktemp)"
+	cat "$filename" > "$tempFile"
+	echo "$@" >> "$tempFile"
+	cat "$tempFile" > "$filename"
+    rm "$tempFile"
+}
+
 # Commands to be executed as root
 
 # Janusgraph specific configuration
@@ -39,7 +49,7 @@ fi
 # # of partitions in the cluster
 if [ "$JANUSGRAPH_CLUSTER_SIZE" ]; then
     _sed-in-place "$JANUSGRAPH_HOME/conf/gremlin-server/janusgraph-cassandra-es-server.properties" \
-            -r 's/^(# )?(cluster\.max-partitions=).*/\2 '$JANUSGRAPH_CLUSTER_SIZE'/'
+            -r 's/^(# )?(cluster\.max\-partitions=).*/\2 '$JANUSGRAPH_CLUSTER_SIZE'/'
 fi
 
 # modified using original cassandra entrypoint
@@ -86,6 +96,9 @@ if [ "$1" = 'cassandra' ]; then
 	_sed-in-place "$CASSANDRA_CONFIG/cassandra.yaml" \
 		-r 's/(- seeds:).*/\1 "'"$CASSANDRA_SEEDS"'"/'
 
+	_sed-append "$CASSANDRA_CONFIG/cassandra.yaml" \
+		"auto_bootstrap: false"
+
 	for yaml in \
 		broadcast_address \
 		broadcast_rpc_address \
@@ -119,15 +132,25 @@ fi
 # start ssh server
 /usr/sbin/sshd -D &
 # run the original cassandra command
-"$@";
 
 #check if cassandra succesfully started
 while [ $(nodetool status | grep "$(_ip_address)" | grep UN | wc -l) -lt 1 ]
 do
-    echo "Cassandra is not up, waiting 30 seconds"
-    sleep 30;
-    "$@";
+  sleep 1;
+	if [ $(jps | grep Cassandra | wc -l) -lt 1 ]; then
+		"$@";
+	else
+    	echo "Cassandra is not up, waiting 30 seconds"
+    	sleep 30;
+	fi
 done
 
-# start gremlin-server
+# start gremlin-server after all cassandra nodes are up
+while [$(nodetool status | grep UN | wc -l) -lt $JANUSGRAPH_CLUSTER_SIZE]
+do
+	echo "Cassandra cluster is not ready, waiting 30 seconds"
+	sleep 30;
+done
+
+sleep 30;
 exec "$JANUSGRAPH_HOME/bin/gremlin-server.sh"

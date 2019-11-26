@@ -12,7 +12,7 @@ services:
         constraints:
           - node.role == worker
     environment:
-      CASSANDRA_BROADCAST_ADDRESS: worker1
+      CASSANDRA_SEEDS: worker1
       CASSANDRA_INITIAL_TOKEN: 0000000000000000
       JANUSGRAPH_CLUSTER_SIZE: 4
     expose:
@@ -67,7 +67,7 @@ services:
           - '{{.Service.Name}}-{{.Task.Slot}}'
   worker4:
     image: 127.0.0.1:5000/janusgraph
-    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 30sta; fi && /docker-entrypoint.sh cassandra'
+    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 30; fi && /docker-entrypoint.sh cassandra'
     volumes:
       - results:/sgp/results/
     deploy:
