@@ -38,6 +38,8 @@ import org.janusgraph.core.schema.SchemaAction
 import org.janusgraph.graphdb.database.management.ManagementSystem
 import org.apache.tinkerpop.gremlin.structure.Graph
 
+import java.io.File
+
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.text.SimpleDateFormat
@@ -59,6 +61,10 @@ import java.util.TimerTask
  * @author Anil Pacaci <apacaci@uwaterloo.ca>
  */
 class ADJParser {
+
+    static String DATASET_VOLUME = "/sgp/datasets/"
+    static String RESULT_VOLUME = "/sgp/results/"
+    static String PARAMETERS_VOLUME = "/sgp/parameters/"
 
     static int TX_MAX_RETRIES = 1000
 
@@ -430,24 +436,44 @@ class ADJParser {
 
 
         // Full paths for edge and vertex files
-        String nodeFile;
-        String edgeFile;
+        File nodeFile;
+        File edgeFile;
 
         // WARN, we use the same file for nodes and edges, for nodes we simply rely on first vertex id on each line
-        String inputBaseDir = configuration.getString("input.base")
+        String inputBase = configuration.getString("input.base")
+        File inputBaseDir = FileUtils.getFile(inputBase)
+
+        if(!inputBase.exists()) {
+            inputBaseDir = FileUtils.getFile(DATASET_VOLUME, inputBaseDir)
+        }
+
+        if(!inputBaseDir.exists()) {
+            System.out.println("Input graph does NOT exists: " + inputBaseDir)
+        }
 
         // SNB graphs have seperate edge and vertex files
         boolean isGraphSNB = configuration.getBoolean("graph.snb")
 
-
         // snb graph has multiple files
         if(isGraphSNB) {
-            nodeFile = Paths.get(inputBaseDir, "person_0_0.csV")
-            edgeFile = Paths.get(inputBaseDir, "person_knows_person_0_0.csv")
+            nodeFile = Paths.get( inputBaseDir, "person_0_0.csV")
+            edgeFile = Paths.get( inputBaseDir, "person_knows_person_0_0.csv")
         } else {
-            nodeFile = inputBaseDir
-            edgeFile = inputBaseDir
+            nodeFile = Paths.get( inputBaseDir)
+            edgeFile = Paths.get( inputBaseDir)
         }
+
+        //check validity of graph file
+        if(!nodeFile.exists()) {
+            System.out.println("Node file does NOT exists: " + nodeFile)
+            return
+        }
+
+        if(!edgeFile.exists()) {
+            System.out.println("Edge file does NOT exists: " + edgeFile)
+            return
+        }
+
 
         int threadCount = configuration.getInt("thread.count")
         int batchSize = configuration.getInt("batch.size")
@@ -459,7 +485,7 @@ class ADJParser {
         ExecutorService executor = Executors.newFixedThreadPool(threadCount)
 
         try {
-            SharedGraphReader graphReader = new SharedGraphReader(Paths.get(nodeFile), batchSize, progReportPeriod)
+            SharedGraphReader graphReader = new SharedGraphReader(Paths.get(nodeFile.getAbsolutePath()), batchSize, progReportPeriod)
             List<ADJGraphLoader> tasks = new ArrayList<ADJGraphLoader>()
             for (int i = 0; i < threadCount; i++) {
                 tasks.add(new ADJGraphLoader(graph, graphReader, ElementType.VERTEX, idMapping, isGraphSNB))
@@ -469,7 +495,7 @@ class ADJParser {
             graphReader.stop()
 
 
-            graphReader = new SharedGraphReader(Paths.get(edgeFile), batchSize, progReportPeriod)
+            graphReader = new SharedGraphReader(Paths.get(edgeFile.getAbsolutePath()), batchSize, progReportPeriod)
             tasks = new ArrayList<ADJGraphLoader>()
             for (int i = 0; i < threadCount; i++) {
                 tasks.add(new ADJGraphLoader(graph, graphReader, ElementType.EDGE, idMapping, isGraphSNB))
@@ -496,7 +522,17 @@ class ADJParser {
     static void partitionLookupImport(Configuration configuration) {
         String entityPrefix = "person:";
 
-        File lookupFile = FileUtils.getFile(configuration.getString("partition.lookup"))
+        String partitionLookup = configuration.getString("partition.lookup")
+        File lookupFile = FileUtils.getFile(partitionLookup)
+        if(!lookupFile.exists()) {
+            // it is a relative path
+            lookupFile = FileUtils.getFile(DATASET_VOLUME, partitionLookup)
+        }
+
+        if(!lookupFile.exists()) {
+            //there is no partition lookup file, notify user
+            System.out.println("Partition lookup file CANNOT be found: " + partitionLookup)
+        }
         String[] servers = configuration.getStringArray("memcached.address")
         int batchSize = configuration.getInt("batch.size")
         int threadCount = configuration.getInt("thread.count")
