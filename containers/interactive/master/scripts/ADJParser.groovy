@@ -543,7 +543,8 @@ class ADJParser {
 
         List<String> partitionFiles = new ArrayList<>()
         if(lookupFile.isFile()) {
-            partitionFiles.add(lookupFile.toString())
+            // lookupFile is already pointing out the exact file
+            partitionFiles.add("")
         } else {
             partitionFiles.addAll(Arrays.asList(lookupFile.list()))
         }
@@ -559,7 +560,7 @@ class ADJParser {
                         LineIterator it = FileUtils.lineIterator(FileUtils.getFile(lookupFile.toString(), partitionFile), "UTF-8")
                         System.out.println("Start processing partition lookup file: " + partitionFile)
                         while (it.hasNext()) {
-                            String[] parts = it.nextLine().split("\\s")
+                            String[] parts = it.nextLine().split(",|\\s")
                             String id = parts[0]
                             Integer partition = Integer.valueOf(parts[1])
 
