@@ -8,8 +8,6 @@ services:
       placement:
         constraints:
           - node.role == manager
-    environment:
-      CASSANDRA_INITIAL_TOKEN: 1000000000000000
     depends_on:
       - worker1
     networks:
