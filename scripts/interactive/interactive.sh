@@ -169,9 +169,9 @@ run_experiments()
 
 	EXPERIMENT_CONF=$1
 
-	echo "docker exec -u mpi -it \"${MASTER_SERVICE_NAME}\".1.\$\(docker service ps -f name=\"${MASTER_SERVICE_NAME}\".1 \"${MASTER_SERVICE_NAME}\" -q --no-trunc \| head -n1\) /sgp/scripts/run_experiments.py \"${EXPERIMENT_CONF}\" "
+	echo "docker exec -it \"${MASTER_SERVICE_NAME}\".1.\$\(docker service ps -f name=\"${MASTER_SERVICE_NAME}\".1 \"${MASTER_SERVICE_NAME}\" -q --no-trunc \| head -n1\) /sgp/scripts/run_experiments.py \"${EXPERIMENT_CONF}\" "
 	printf "\\n"
-	docker exec -u mpi -it ${MASTER_SERVICE_NAME}.1.$(docker service ps -f name=${MASTER_SERVICE_NAME}.1 ${MASTER_SERVICE_NAME} -q --no-trunc | head -n1) /sgp/scripts/run_experiments.py ${EXPERIMENT_CONF}
+	docker exec  -it ${MASTER_SERVICE_NAME}.1.$(docker service ps -f name=${MASTER_SERVICE_NAME}.1 ${MASTER_SERVICE_NAME} -q --no-trunc | head -n1) /sgp/scripts/run_experiments.py ${EXPERIMENT_CONF}
 }
 
 import_dataset()
@@ -185,9 +185,9 @@ import_dataset()
 
 	EXPERIMENT_CONF=$1
 
-	echo "docker exec -u mpi -it \"${MASTER_SERVICE_NAME}\".1.\$\(docker service ps -f name=\"${MASTER_SERVICE_NAME}\".1 \"${MASTER_SERVICE_NAME}\" -q --no-trunc \| head -n1\) /sgp/scripts/master.py load \"${EXPERIMENT_CONF}\" "
+	echo "docker exec -it \"${MASTER_SERVICE_NAME}\".1.\$\(docker service ps -f name=\"${MASTER_SERVICE_NAME}\".1 \"${MASTER_SERVICE_NAME}\" -q --no-trunc \| head -n1\) /sgp/scripts/master.py load \"${EXPERIMENT_CONF}\" "
 	printf "\\n"
-	docker exec -u mpi -it ${MASTER_SERVICE_NAME}.1.$(docker service ps -f name=${MASTER_SERVICE_NAME}.1 ${MASTER_SERVICE_NAME} -q --no-trunc | head -n1) /sgp/scripts/master.py load ${EXPERIMENT_CONF}
+	docker exec -it ${MASTER_SERVICE_NAME}.1.$(docker service ps -f name=${MASTER_SERVICE_NAME}.1 ${MASTER_SERVICE_NAME} -q --no-trunc | head -n1) /sgp/scripts/master.py load ${EXPERIMENT_CONF}
 }
 
 run_command()

@@ -21,6 +21,7 @@ RUN apt-get update &&\
 
 COPY janusgraph ${JANUSGRAPH_HOME}
 COPY scripts /sgp/scripts
+RUN chmod +x -R /sgp/scripts 
 
 # # ------------------------------------------------------------
 # # SSH Setup
