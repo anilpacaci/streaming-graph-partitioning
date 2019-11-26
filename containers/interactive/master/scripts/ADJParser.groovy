@@ -443,8 +443,8 @@ class ADJParser {
         String inputBase = configuration.getString("input.base")
         File inputBaseDir = FileUtils.getFile(inputBase)
 
-        if(!inputBase.exists()) {
-            inputBaseDir = FileUtils.getFile(DATASET_VOLUME, inputBaseDir)
+        if(!inputBaseDir.exists()) {
+            inputBaseDir = FileUtils.getFile(DATASET_VOLUME, inputBase)
         }
 
         if(!inputBaseDir.exists()) {
@@ -456,11 +456,11 @@ class ADJParser {
 
         // snb graph has multiple files
         if(isGraphSNB) {
-            nodeFile = Paths.get( inputBaseDir, "person_0_0.csV")
-            edgeFile = Paths.get( inputBaseDir, "person_knows_person_0_0.csv")
+            nodeFile = FileUtils.getFile( inputBaseDir, "person_0_0.csv")
+            edgeFile = FileUtils.getFile( inputBaseDir, "person_knows_person_0_0.csv")
         } else {
-            nodeFile = Paths.get( inputBaseDir)
-            edgeFile = Paths.get( inputBaseDir)
+            nodeFile = FileUtils.getFile( inputBaseDir)
+            edgeFile = FileUtils.getFile( inputBaseDir)
         }
 
         //check validity of graph file
