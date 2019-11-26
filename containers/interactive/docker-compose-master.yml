@@ -10,6 +10,10 @@ services:
           - node.role == manager
     depends_on:
       - worker1
+    volumes:
+      - datasets:/sgp/datasets/
+      - results:/sgp/results/
+      - parameters:/sgp/parameters/
     networks:
       janusgraph-network:
         aliases:

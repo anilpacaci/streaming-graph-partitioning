@@ -43,13 +43,13 @@ JANUSGRAPH_STORAGE_HOSTNAME="$(_ip_address)"
 # update storage hostname to point out cassandra address
 if [ "$JANUSGRAPH_STORAGE_HOSTNAME" ]; then
     _sed-in-place "$JANUSGRAPH_HOME/conf/gremlin-server/janusgraph-cassandra-es-server.properties" \
-        -r 's/^(# )?(storage\.hostname=).*/\2 '$JANUSGRAPH_STORAGE_HOSTNAME'/'
+        -r 's/^(# )?(storage\.hostname\s*=).*/\2 '$JANUSGRAPH_STORAGE_HOSTNAME'/'
 fi
 
 # # of partitions in the cluster
 if [ "$JANUSGRAPH_CLUSTER_SIZE" ]; then
     _sed-in-place "$JANUSGRAPH_HOME/conf/gremlin-server/janusgraph-cassandra-es-server.properties" \
-            -r 's/^(# )?(cluster\.max\-partitions=).*/\2 '$JANUSGRAPH_CLUSTER_SIZE'/'
+            -r 's/^(# )?(cluster\.max\-partitions\s*=).*/\2 '$JANUSGRAPH_CLUSTER_SIZE'/'
 fi
 
 # modified using original cassandra entrypoint

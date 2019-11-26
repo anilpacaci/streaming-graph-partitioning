@@ -43,7 +43,8 @@ if COMMAND == 'load':
         # exit as there is no parameter file in the parameter volume
         print "Parameter file {} does not exist in the parameter volume {}".format(PARAMATER_FILE, parameters_volume)
         sys.exit(2)
-    populate_db(PARAMATER_FILE)
+    populate_db(full_parameter_path)
+
 elif COMMAND == 'run':
     full_parameter_path = os.path.join(parameters_volume, PARAMATER_FILE)
     if not os.path.exists(full_parameter_path):
