@@ -20,10 +20,6 @@ ENV JANUSGRAPH_HOME=/sgp/janusgraph
 RUN apt-get update &&\
 	apt-get -y install default-jdk gcc openssh-server openmpi-bin python dnsutils sudo vim iputils-ping
 
-# copy JanusGraph Codebase
-COPY janusgraph/ ${JANUSGRAPH_HOME}
-COPY scripts/ /sgp/
-
 # # ------------------------------------------------------------
 # # SSH Setup
 # # ------------------------------------------------------------
@@ -50,6 +46,17 @@ COPY ssh/ ${SSHDIR}/
 RUN cat ${SSHDIR}/*.pub >> ${SSHDIR}/authorized_keys
 RUN chmod -R 600 ${SSHDIR}/* \
          && chown -R ${USER}:${USER} ${SSHDIR}
+
+# # ------------------------------------------------------------
+# # initialization script
+# # ------------------------------------------------------------
+# copy JanusGraph Codebase
+COPY janusgraph/ ${JANUSGRAPH_HOME}
+COPY scripts/ /sgp/
+
+# copy cassandra specific configuration
+COPY cassandra-env.sh /etc/cassandra
+
 # # ------------------------------------------------------------
 # # initialization script
 # # ------------------------------------------------------------
