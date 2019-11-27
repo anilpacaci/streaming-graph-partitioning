@@ -204,7 +204,7 @@ class ADJParser {
             joinDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
             String[] colNames = graphReader.getColNames()
 
-            String edgeLabel = knows
+            String edgeLabel = "knows"
 
             boolean txSucceeded;
             long txFailCount;
@@ -482,7 +482,7 @@ class ADJParser {
         ExecutorService executor = Executors.newFixedThreadPool(threadCount)
 
         try {
-            SharedGraphReader graphReader = new SharedGraphReader(Paths.get(nodeFile.getAbsolutePath()), batchSize, progReportPeriod)
+            SharedGraphReader graphReader = new SharedGraphReader(Paths.get(nodeFile.getAbsolutePath()), batchSize, progReportPeriod, isGraphSNB)
             List<ADJGraphLoader> tasks = new ArrayList<ADJGraphLoader>()
             for (int i = 0; i < threadCount; i++) {
                 tasks.add(new ADJGraphLoader(graph, graphReader, ElementType.VERTEX, idMapping, isGraphSNB))
@@ -492,7 +492,7 @@ class ADJParser {
             graphReader.stop()
 
 
-            graphReader = new SharedGraphReader(Paths.get(edgeFile.getAbsolutePath()), batchSize, progReportPeriod)
+            graphReader = new SharedGraphReader(Paths.get(edgeFile.getAbsolutePath()), batchSize, progReportPeriod, isGraphSNB)
             tasks = new ArrayList<ADJGraphLoader>()
             for (int i = 0; i < threadCount; i++) {
                 tasks.add(new ADJGraphLoader(graph, graphReader, ElementType.EDGE, idMapping, isGraphSNB))
