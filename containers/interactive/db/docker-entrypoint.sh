@@ -52,6 +52,21 @@ if [ "$JANUSGRAPH_CLUSTER_SIZE" ]; then
             -r 's/^(# )?(cluster\.max\-partitions\s*=).*/\2 '$JANUSGRAPH_CLUSTER_SIZE'/'
 fi
 
+# generate the array of worker addresses
+hosts_string="["
+for (( counter=1 ; counter <JANUSGRAPH_CLUSTER_SIZE ; counter++ ))
+do
+    hosts_string=$hosts_string"worker"$counter", "
+done
+hosts_string=$hosts_string"worker"$JANUSGRAPH_CLUSTER_SIZE"]"
+
+# update remote-objects with the list of active hosts
+if [ "$JANUSGRAPH_CLUSTER_SIZE" ]; then
+    _sed-in-place "$JANUSGRAPH_HOME/conf/remote-objects.yaml" \
+            -r 's/^(# )?(hosts\s*=).*/\2 '$hosts_string'/'
+fi
+
+
 # modified using original cassandra entrypoint
 
 # first arg is `-f` or `--some-option`
