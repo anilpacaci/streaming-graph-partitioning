@@ -113,6 +113,9 @@ if [ "$1" = 'cassandra' ]; then
 
 	_sed-append "$CASSANDRA_CONFIG/cassandra.yaml" \
 		"auto_bootstrap: false"
+ 
+  _sed-append "$CASSANDRA_CONFIG/cassandra-env.sh" \
+    -r 's/(RMI_HOSTNAME=).*/\1' "$(_ip_address)"
 
 	for yaml in \
 		broadcast_address \
