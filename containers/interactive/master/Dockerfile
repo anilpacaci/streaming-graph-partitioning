@@ -17,8 +17,12 @@ ENV JANUSGRAPH_HOME=/sgp/janusgraph
 # # ------------------------------------------------------------
 
 RUN apt-get update &&\
-	apt-get -y install default-jdk openssh-server python dnsutils vim sudo memcached
+	apt-get -y install default-jdk openssh-server python python3-pip dnsutils vim sudo memcached
 
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 10 &&\ 
+  pip3 install --upgrade pip &&\
+  python -m pip install jmxquery
+  
 COPY janusgraph ${JANUSGRAPH_HOME}
 COPY scripts /sgp/scripts
 RUN chmod +x -R /sgp/scripts 
