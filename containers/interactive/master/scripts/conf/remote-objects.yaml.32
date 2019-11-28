@@ -1,0 +1,45 @@
+hosts: [worker1, worker2, worker3, worker4, worker5, worker6, worker7, worker8, worker9, worker10, worker11, worker12, worker13, worker14, worker15, worker16, worker17, worker18, worker19, worker20, worker21, worker22, worker23, worker24, worker25, worker26, worker27, worker28, worker29, worker30, worker31, worker32]
+
+port: 8182
+serializer: { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
+connectionPool: { maxSize: 192, minSize: 192, maxContentLength: 131072, maxWaitForConnection: 30000 }
+placementHistory: {
+  hosts: [master],
+  port: 11211,
+  lookupProperty: "person_id",
+  instanceName: "partition-lookup",
+  partitionHostMapping: {
+    31: worker1,
+    0: worker2,
+    1: worker3,
+    2: worker4,
+    3: worker5,
+    4: worker6,
+    5: worker7,
+    6: worker8,
+    7: worker9,
+    8: worker10,
+    9: worker11,
+    10: worker12,
+    11: worker13,
+    12: worker14,
+    13: worker15,
+    14: worker16,
+    15: worker17,
+    16: worker18,
+    17: worker19,
+    18: worker20,
+    19: worker21,
+    20: worker22,
+    21: worker23,
+    22: worker24,
+    23: worker25,
+    24: worker26,
+    25: worker27,
+    26: worker28,
+    27: worker29,
+    28: worker30,
+    29: worker31,
+    30: worker32
+  }
+}

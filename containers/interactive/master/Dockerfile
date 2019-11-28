@@ -21,7 +21,8 @@ RUN apt-get update &&\
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 10 &&\ 
   pip3 install --upgrade pip &&\
-  python -m pip install jmxquery
+  python -m pip install jmxquery &&\
+  python -m pip install jproperties
   
 COPY janusgraph ${JANUSGRAPH_HOME}
 COPY scripts /sgp/scripts

@@ -1,0 +1,21 @@
+hosts: [worker1, worker2, worker3, worker4, worker5, worker6, worker7, worker8]
+
+port: 8182
+serializer: { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
+connectionPool: { maxSize: 192, minSize: 192, maxContentLength: 131072, maxWaitForConnection: 30000 }
+placementHistory: {
+  hosts: [master],
+  port: 11211,
+  lookupProperty: "person_id",
+  instanceName: "partition-lookup",
+  partitionHostMapping: {
+    7: worker1,
+    0: worker2,
+    1: worker3,
+    2: worker4,
+    3: worker5,
+    4: worker6,
+    5: worker7,
+    6: worker8
+  }
+}
