@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import subprocess
-from enum import ENUM
+from enum import Enum
 from jmxquery import JMXConnection, JMXQuery
 import os
 import json
@@ -27,7 +27,7 @@ THREADS_PER_WORKER_HIGH = 24
 
 # performs a JMX query to every worker in the cluster to obtain read counts
 def cassandra_read_counter(worker_count):
-    read_counts = {}
+    read_counts = []
 
     for i in worker_count:
         hostname = WORKER_HOSTNAME_PREFIX + str(i)
@@ -62,7 +62,7 @@ def result_directory(graph_name, ingress, nworkers, workload, load):
 # read tput from previous execution
 def read_tput(result_dir):
     result_file = os.path.join(result_dir, 'LDBC-results.json')
-    with open(result_file, 'rb') as result_handle:
+    with open(result_file, 'r') as result_handle:
         results = json.load(result_handle)
         tput = results['throughput']
         return int(tput)
@@ -76,7 +76,7 @@ def run(graph_name, ingress, nworkers, dataset_location):
     print('Warm up for onehop workload run will be executed')
     onehop_previous_counts = cassandra_read_counter(nworkers)
     result_dir = result_directory(graph_name, ingress, nworkers, WORKLOAD.ONE_HOP, LOAD.MEDIUM_LOAD)
-    subprocess.call(['/sgp/scripts/run-driver.sh', nworkers, int(nworkers) * THREADS_PER_WORKER_MEDIUM, dataset_location, 'onehop', result_dir])
+    subprocess.call(['/sgp/scripts/run-driver.sh', str(nworkers), str(int(nworkers) * THREADS_PER_WORKER_MEDIUM), dataset_location, 'onehop', result_dir])
     onehop_current_counts = cassandra_read_counter(nworkers)
     onehop_load = compute_load(onehop_previous_counts, onehop_current_counts)
 
@@ -84,18 +84,18 @@ def run(graph_name, ingress, nworkers, dataset_location):
     # onehop calls, medium and
     print('Medium load for onehop workload run will be executed')
     result_dir = result_directory(graph_name, ingress, nworkers, WORKLOAD.ONE_HOP, LOAD.MEDIUM_LOAD)
-    subprocess.call(['/sgp/scripts/run-driver.sh', nworkers, int(nworkers) * THREADS_PER_WORKER_MEDIUM, dataset_location, 'onehop', result_dir])
+    subprocess.call(['/sgp/scripts/run-driver.sh', str(nworkers), str(int(nworkers) * THREADS_PER_WORKER_MEDIUM), dataset_location, 'onehop', result_dir])
     onehop_medium_tput = read_tput(result_dir)
     print('Medium load for onehop workload run will be executed')
     result_dir = result_directory(graph_name, ingress, nworkers, WORKLOAD.ONE_HOP, LOAD.HIGH_LOAD)
-    subprocess.call(['/sgp/scripts/run-driver.sh', nworkers, int(nworkers) * THREADS_PER_WORKER_HIGH, dataset_location, 'onehop', result_dir])
+    subprocess.call(['/sgp/scripts/run-driver.sh', str(nworkers), str(int(nworkers) * THREADS_PER_WORKER_HIGH), dataset_location, 'onehop', result_dir])
     onehop_high_tput = read_tput(result_dir)
 
     #onehop experiments
     print('Warm up for twohop workload run will be executed')
     twohop_previous_counts = cassandra_read_counter(nworkers)
     result_dir = result_directory(graph_name, ingress, nworkers, WORKLOAD.TWO_HOP, LOAD.MEDIUM_LOAD)
-    subprocess.call(['/sgp/scripts/run-driver.sh', nworkers, int(nworkers) * THREADS_PER_WORKER_MEDIUM, dataset_location, 'twohop', result_dir])
+    subprocess.call(['/sgp/scripts/run-driver.sh', str(nworkers), str(int(nworkers) * THREADS_PER_WORKER_MEDIUM), dataset_location, 'twohop', result_dir])
     twohop_current_counts = cassandra_read_counter(nworkers)
     twohop_load = compute_load(twohop_previous_counts, twohop_current_counts)
 
@@ -103,11 +103,11 @@ def run(graph_name, ingress, nworkers, dataset_location):
     # twohop calls, medium and
     print('Medium load for twohop workload run will be executed')
     result_dir = result_directory(graph_name, ingress, nworkers, WORKLOAD.TWO_HOP, LOAD.MEDIUM_LOAD)
-    subprocess.call(['/sgp/scripts/run-driver.sh', nworkers, int(nworkers) * THREADS_PER_WORKER_MEDIUM, dataset_location, 'twohop', result_dir])
+    subprocess.call(['/sgp/scripts/run-driver.sh', str(nworkers), str(int(nworkers) * THREADS_PER_WORKER_MEDIUM, dataset_location), 'twohop', result_dir])
     twohop_medium_tput = read_tput(result_dir)
     print('Medium load for twohop workload run will be executed')
     result_dir = result_directory(graph_name, ingress, nworkers, WORKLOAD.TWO_HOP, LOAD.HIGH_LOAD)
-    subprocess.call(['/sgp/scripts/run-driver.sh', nworkers, int(nworkers) * THREADS_PER_WORKER_HIGH, dataset_location, 'twohop', result_dir])
+    subprocess.call(['/sgp/scripts/run-driver.sh', str(nworkers), str(int(nworkers) * THREADS_PER_WORKER_HIGH, dataset_location), 'twohop', result_dir])
     twohop_high_tput = read_tput(result_dir)
 
     # now parse and write results
