@@ -3,7 +3,7 @@
 operation_count=100000
 thread_count=128
 
-# locator should point to remote-objects.yaml
+# locator should point to remote-objects.yaml.4
 locatorgremlin=conf/remote-objects.yaml
 locator=$locatorgremlin
 

@@ -6,11 +6,18 @@ import sys
 import json
 import os
 import subprocess
+from jproperties import Properties
+import numpy
+from ldbc_run import run
 
 # volumes defined in the docker compose file
 dataset_volume = "/sgp/datasets/"
 result_volume = "/sgp/results/"
 parameters_volume = "/sgp/parameters/"
+
+WORKER_HOSTNAME_PREFIX = 'worker'
+THREADS_PER_WORKER_MEDIUM = 12
+THREADS_PER_WORKER_HIGH = 24
 
 edge_cut_algorithms = ["random_ec", "ldg", "fennel", "metis"]
 
@@ -35,6 +42,20 @@ def populate_db(parameter_file):
     print '/sgp/janusgraph/bin/gremlin.sh -e /sgp/scripts/SNBParser.groovy {}'.format(parameter_file)
     subprocess.call(['/sgp/janusgraph/bin/gremlin.sh', '-e', '/sgp/scripts/ADJParser.groovy', parameter_file])
 
+# runs an experiment over a configuration given in the parameter file file and logs results for further processing
+def run_experiment(parameter_file):
+    # first load parameter file and extract related parameters
+    config = Properties()
+    with open(parameter_file, 'rb') as pf:
+        config.load(pf, 'utf-8')
+
+    graph_name = config.properties['graph.name']
+    ingress = config.properties['partition.ingress']
+    nworkers = config.properties['partition.count']
+    dataset_location = os.path.join(dataset_volume, config.properties['input.base'])
+
+    # call run to complete al runs on this configuration
+    run(graph_name, ingress, nworkers, dataset_location)
 
 
 if COMMAND == 'load':
@@ -51,5 +72,7 @@ elif COMMAND == 'run':
         # exit as there is no parameter file in the parameter volume
         print "Parameter file {} does not exist in the parameter volume {}".format(PARAMATER_FILE, parameters_volume)
         sys.exit(2)
+    # file exists so run the experiment with given file
+    run_experiment(full_parameter_path)
 
 
