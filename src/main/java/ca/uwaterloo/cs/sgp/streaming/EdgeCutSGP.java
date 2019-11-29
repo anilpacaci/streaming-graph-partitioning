@@ -13,6 +13,7 @@ import org.apache.commons.io.LineIterator;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.lang.*;
 import java.io.FileNotFoundException;
@@ -118,9 +119,7 @@ public class EdgeCutSGP {
             TieBreaker.add(i);
         }
 
-        Random rand = new Random();
-        int value = rand.nextInt(TieBreaker.size());
-        argmax = TieBreaker.get(value);
+       argmax = vertexID.hashCode() % this.numberOfPartitions;
 
         // compute the edge cut
         for(int i = 0 ; i < this.numberOfPartitions ; i++) {
@@ -287,30 +286,35 @@ public class EdgeCutSGP {
             e.printStackTrace();
         }
 
-        String inputFile = config.getString("sgp.inputfile");
-        String outputFile = config.getString("sgp.outputfile");
+        String inputFile = config.getString("sgp.inputfile") + "adj.txt";
         String[] edgeLabels = config.getStringArray("sgp.edgelabels");
-        Integer numberOfPartitions = config.getInt("sgp.partitioncount");
         Integer numberOfVertices = config.getInt("sgp.vertexcount");
         Integer numberOfEdges = config.getInt("sgp.edgecount");
-        String algorithm = config.getString("sgp.algorithm");
         Boolean undirect = config.getBoolean("sgp.undirected");
         Double balanceSlack = config.getDouble("sgp.balanceslack");
+        Double gamma = config.getDouble("sgp.fennel.gamma");
 
+        int[] numberOfPartitions = new int[]{4, 8, 16};
+        String[] algorithms = new String[]{"hash", "ldg", "fennel"};
 
-        EdgeCutSGP pa = new EdgeCutSGP(inputFile, numberOfPartitions, numberOfVertices, balanceSlack, edgeLabels);
-        if(algorithm.equals("ldg")){
-        	pa.streamingPartition(undirect, algorithm);
+        for(Integer partition : numberOfPartitions) {
+            for(String algorithm : algorithms) {
+                System.out.println("Partitioning  " + algorithm + " with partition count " + partition);
+
+                EdgeCutSGP pa = new EdgeCutSGP(inputFile, partition, numberOfVertices, balanceSlack, edgeLabels);
+
+                pa.setGamma(gamma);
+
+                Double alpha = Math.sqrt(partition) * numberOfEdges / Math.pow(numberOfVertices, 1.5);
+                pa.setAlpha(alpha);
+
+                pa.streamingPartition(undirect, algorithm);
+
+                String outputFile = Paths.get(inputFile, algorithm + "-" + partition + ".txt").toString();
+                pa.print(outputFile);
+                System.out.println("Partitioning information is written into: " + outputFile);
+            }
         }
-        else{
-        	Double gamma = config.getDouble("sgp.fennel.gamma");
-        	pa.setGamma(gamma);
 
-        	Double alpha = Math.sqrt(numberOfPartitions) * numberOfEdges / Math.pow(numberOfVertices, 1.5);
-            pa.setAlpha(alpha);
-        	pa.streamingPartition(undirect, algorithm);
-        }
-
-        pa.print(outputFile);
     }
 }
