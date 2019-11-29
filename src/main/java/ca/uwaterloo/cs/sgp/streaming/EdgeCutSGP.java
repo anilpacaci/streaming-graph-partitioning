@@ -222,7 +222,7 @@ public class EdgeCutSGP {
 
                 // System.out.println(VertexString);
 
-                List<String> outgoingEdges = LineParser(splitLine);
+                List<String> outgoingEdges = Arrays.asList(splitLine);
 
                 int next_partition;
                if(algorithm.equals("ldg")){
