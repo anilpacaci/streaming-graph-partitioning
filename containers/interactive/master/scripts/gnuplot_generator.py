@@ -13,10 +13,6 @@ dataset_volume = "/sgp/datasets/"
 result_volume = "/sgp/results/"
 parameters_volume = "/sgp/parameters/"
 
-DEFAULT_PARTITION = 64
-DEFAULT_WORKLOAD = 'pagerank'
-
-
 
 # resulting map that stores all dataset and result files
 result_map = {}
@@ -48,7 +44,8 @@ for parameter_file in sys.argv[1:]:
         print "{} does not have a valid results file {}".format(dataset_name, aggregated_results_filename)
         continue
     aggregated_results = pandas.read_csv(aggregated_results_filename, header=0)
-    result_map[dataset_name] = aggregated_results
+    filtered_per_graph = aggregated_results[aggregated_results['graph'] == dataset_name]
+    result_map[dataset_name] = filtered_per_graph
 
 
 # generate load imbalance

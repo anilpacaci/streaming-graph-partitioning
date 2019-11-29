@@ -88,6 +88,6 @@ def generate_time(dataset_name, dataset):
             sgpToTime['partitions'] = partition
             newDF = newDF.append(sgpToTime, ignore_index=True)
         # generate plot using the generated data
-        result_dataset_filename =  'time-line-{}-{}'.format(DEFAULT_WORKLOAD, dataset_name)
-        output_filename = 'time-line-{}-{}'.format(DEFAULT_WORKLOAD, dataset_name)
+        result_dataset_filename =  'time-line-{}-{}'.format(workload, dataset_name)
+        output_filename = 'time-line-{}-{}'.format(workload, dataset_name)
         gnuplot_call(TIME_LINE_SCRIPT, newDF, result_dataset_filename, output_filename)

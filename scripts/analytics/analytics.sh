@@ -211,7 +211,7 @@ usage()
     echo ""
     echo "		runs a set of experiments described in the config file"
     echo ""
-    echo "	5. Run experiments:"
+    echo "	5. Generate Plots:"
     echo "		$ ./analytics.sh plot [config_file_1, ..., config_file_n]"
     echo ""
     echo "		generates result plots from the results of each experiment given by config files"

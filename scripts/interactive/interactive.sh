@@ -232,6 +232,34 @@ print_cluster_size()
 	echo "$func_result"
 }
 
+generate_plots()
+{
+    printf "\\n\\n ===> GENERATE PLOTS"
+    printf "\\n"
+    if [ $# -eq 0 ] ; then
+        echo "Supply relative path of the configuration file under /sgp/parameters/"
+        exit 1
+    fi
+
+    # shift once to eliminate the first argument
+    shift
+    PARAMS=("$@")
+
+    echo "Result plots will be generated for configurations:"
+
+    for PARAM in "${PARAMS[@]}"
+    do
+        echo "Config file: ${PARAM}"
+    done
+
+    echo "\"${PARAMS[*]}\""
+
+    echo "docker exec -it \"${MASTER_SERVICE_NAME}\".1.\$\(docker service ps -f name=\"${MASTER_SERVICE_NAME}\".1 \"${MASTER_SERVICE_NAME}\" -q --no-trunc \| head -n1\) /sgp/scripts/gnuplot_generator.py ${PARAMS[*]} "
+    printf "\\n"
+    docker exec -it ${MASTER_SERVICE_NAME}.1.$(docker service ps -f name=${MASTER_SERVICE_NAME}.1 ${MASTER_SERVICE_NAME} -q --no-trunc | head -n1) /sgp/scripts/gnuplot_generator.py ${PARAMS[*]}
+
+}
+
 usage()
 {
     echo ' More info: https://github.com/anilpacaci/streaming-graph-partitioning'
@@ -266,22 +294,27 @@ usage()
     echo ""
     echo "		imports a dataset into JanusGraph cluster given in config file"
     echo ""
-    echo "  6. Run command directly on container:"
+    echo "	6. Generate Plots:"
+    echo "		$ ./interactive.sh plot [config_file_1, ..., config_file_n]"
+    echo ""
+    echo "		generates result plots from the results of each experiment given by config files"
+    echo ""
+    echo "  7. Run command directly on container:"
     echo "      $ ./interactive.sh cmd service_name command"
     echo ""
     echo "      executes the given command directly on the container"
     echo ""    
-	echo "	7. Stop JanusGraph container:"
+	echo "	8. Stop JanusGraph container:"
     echo "		$ ./interactive.sh stop"
     echo ""
     echo "		stops containers in the machines specified in the host file"
     echo ""
-    echo "	8. Tear down docker cluster:"
+    echo "	9. Tear down docker cluster:"
     echo "		$ ./interactive.sh destroy"
     echo ""
     echo "		removes the overlay network and forces nodes to leave the swarm"
     echo ""
-    echo "	9. Print this help message:"
+    echo "	10. Print this help message:"
     echo "		$ ./interactive.sh usage"
     echo ""
 }
