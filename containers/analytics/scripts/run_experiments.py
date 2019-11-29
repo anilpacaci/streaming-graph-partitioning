@@ -54,8 +54,8 @@ class PowerLyraRun:
 			self.engine = "plsync"
 		
 		self.ingress = ingress["name"]
-		
-		if "lookup" in ingress:
+
+		if self.ingress == "metis":
 			self.lookup = ingress["lookup"][str(machines)]
 
 		if "source" in algorithm:	

@@ -453,11 +453,11 @@ class ADJParser {
 
         // snb graph has multiple files
         if(isGraphSNB) {
-            nodeFile = FileUtils.getFile( inputBaseDir, "person_0_0.csv")
-            edgeFile = FileUtils.getFile( inputBaseDir, "person_knows_person_0_0.csv")
+            nodeFile = FileUtils.getFile( inputBaseDir, "social_network","person_0_0.csv")
+            edgeFile = FileUtils.getFile( inputBaseDir, "social_network", "person_knows_person_0_0.csv")
         } else {
-            nodeFile = FileUtils.getFile( inputBaseDir)
-            edgeFile = FileUtils.getFile( inputBaseDir)
+            nodeFile = FileUtils.getFile( inputBaseDir, "adj.txt")
+            edgeFile = FileUtils.getFile( inputBaseDir, "adj.txt")
         }
 
         //check validity of graph file

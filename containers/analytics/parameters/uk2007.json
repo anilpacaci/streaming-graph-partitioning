@@ -1,0 +1,46 @@
+{
+	"name" : "uk2007",
+	"runs" : {
+		"dataset-name" : "uk2007",
+		"snap-dataset" : "uk2007/snap.txt",
+		"adj-dataset" : "uk2007/adj.txt",
+		"log-folder" : "uk2007-logs",
+		"result-file" : "uk2007-results.csv",
+		"nedges" : "3738733477",
+		"nvertices" : "105896447",
+		"worker-per-node" : 1,
+		"workers" : [8, 16, 32, 64, 128],
+		"ingress" : [
+			{"name" : "random"},
+			{"name" : "dbh"},
+			{"name" : "grid"},
+			{"name" : "hdrf"},
+			{"name" : "hybrid"},
+			{"name" : "hybrid_ginger"},
+			{"name" : "random_ec"},
+			{"name" : "ldg"},
+			{"name" : "fennel"},
+			{
+				"name" : "metis",
+				"lookup" : {
+					"8" : "uk2007/metis-8.txt",
+					"16" : "uk2007/metis-16.txt",
+					"32" : "uk2007/metis-32.txt",
+					"64" : "uk2007/metis-64.txt",
+					"128" : "uk2007/metis-128.txt"
+				}
+			}
+		],
+		"algorithm" : [
+			{
+				"name" : "pagerank",
+				"iterations" : 20
+			},
+			{
+				"name" : "sssp",
+				"source": "44"
+			},
+			{"name" : "connected_component"}
+		]
+	}
+}

@@ -1,0 +1,46 @@
+{
+	"name" : "twitter",
+	"runs" : {
+		"dataset-name" : "twitter",
+		"snap-dataset" : "twitter_rv/snap.txt",
+		"adj-dataset" : "twitter_rv/adj.txt",
+		"log-folder" : "twitter-logs",
+		"result-file" : "twitter-results.csv",
+		"nedges" : "1468364884",
+		"nvertices" : "41652230",
+		"worker-per-node" : 1,
+		"workers" : [8, 16, 32, 64, 128],
+		"ingress" : [
+			{"name" : "random"},
+			{"name" : "dbh"},
+			{"name" : "grid"},
+			{"name" : "hdrf"},
+			{"name" : "hybrid"},
+			{"name" : "hybrid_ginger"},
+			{"name" : "random_ec"},
+			{"name" : "ldg"},
+			{"name" : "fennel"},
+			{
+				"name" : "metis",
+				"lookup" : {
+					"8" : "twitter_rv/metis-8.txt",
+					"16" : "twitter_rv/metis-16.txt",
+					"32" : "twitter_rv/metis-32.txt",
+					"64" : "twitter_rv/metis-64.txt",
+					"128" : "twitter_rv/metis-128.txt"
+				}
+			}
+		],
+		"algorithm" : [
+			{
+				"name" : "pagerank",
+				"iterations" : 20
+			},
+			{
+				"name" : "sssp",
+				"source": "6257722"
+			},
+			{"name" : "connected_component"}
+		]
+	}
+}
