@@ -286,7 +286,7 @@ public class EdgeCutSGP {
             e.printStackTrace();
         }
 
-        String inputFile = config.getString("sgp.inputfile") + "adj.txt";
+        String inputFile = Paths.get(config.getString("sgp.inputfile") , "adj.txt").toString();
         String[] edgeLabels = config.getStringArray("sgp.edgelabels");
         Integer numberOfVertices = config.getInt("sgp.vertexcount");
         Integer numberOfEdges = config.getInt("sgp.edgecount");
