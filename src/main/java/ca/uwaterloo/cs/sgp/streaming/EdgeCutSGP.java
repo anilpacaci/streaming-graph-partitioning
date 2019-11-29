@@ -60,7 +60,7 @@ public class EdgeCutSGP {
             Arrays.stream(edgeLabels).forEach(label -> this.edgeLabels.add(label));
 
         }  catch(FileNotFoundException e){
-            System.out.println("DataSet file not found.");
+            System.out.println("Dataset file not found: " +  file);
         }  catch(IOException e){
             e.printStackTrace();
         }
