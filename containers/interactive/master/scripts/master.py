@@ -51,7 +51,7 @@ def run_experiment(parameter_file):
 
     graph_name = config.properties['graph.name']
     ingress = config.properties['partition.ingress']
-    nworkers = config.properties['partition.count']
+    nworkers = int(config.properties['partition.count'])
     dataset_location = os.path.join(dataset_volume, config.properties['input.base'])
 
     # call run to complete al runs on this configuration
