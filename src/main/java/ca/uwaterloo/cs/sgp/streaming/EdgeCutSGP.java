@@ -210,8 +210,10 @@ public class EdgeCutSGP {
 
     public void streamingPartition( boolean undirect, String algorithm){
             //loop through all lines in the file
+        int counter = 0;
             while(lineIterator.hasNext()){
                 String next = lineIterator.next();
+                counter++;
                 //split each line by whitespace
                 if(next.startsWith("#")) continue; // skip first line
                 String[] splitLine = next.split("\\|", -1);
@@ -251,6 +253,10 @@ public class EdgeCutSGP {
 
                 vertex_to_partition.put(vertexIdentifier, next_partition);
                 partitionSizes[next_partition]++;
+
+                if(counter % 1000000 ==0) {
+                    System.out.print("Processed lines: " + counter + "M");
+                }
             }
 
     }
@@ -286,7 +292,7 @@ public class EdgeCutSGP {
             e.printStackTrace();
         }
 
-        String inputFile = Paths.get(config.getString("sgp.inputfile") , "adj.txt").toString();
+        String inputFile = Paths.get(config.getString("sgp.inputfolder") , "adj.txt").toString();
         String[] edgeLabels = config.getStringArray("sgp.edgelabels");
         Integer numberOfVertices = config.getInt("sgp.vertexcount");
         Integer numberOfEdges = config.getInt("sgp.edgecount");
