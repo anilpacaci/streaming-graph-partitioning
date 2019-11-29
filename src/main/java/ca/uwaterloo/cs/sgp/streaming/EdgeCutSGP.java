@@ -216,40 +216,24 @@ public class EdgeCutSGP {
                 counter++;
                 //split each line by whitespace
                 if(next.startsWith("#")) continue; // skip first line
-                String[] splitLine = next.split("\\|", -1);
+                String[] splitLine = next.split("\\s+", -1);
                 String vertexIdentifier = splitLine[0];
-                String outEdges = splitLine[1];
-                String inEdges = splitLine[2];
+                String outDegree = splitLine[1];
 
                 // System.out.println(VertexString);
 
-                List<String> outgoingEdges = LineParser(outEdges.split("\\s+"));
-                List<String> incomingEdges = LineParser(inEdges.split("\\s+"));
+                List<String> outgoingEdges = LineParser(splitLine);
 
                 int next_partition;
-                //if the graph is treated as undirected, take incoming edges into account
-                if(undirect ) {
-                    List<String> combinedEdges = ListUtils.union(outgoingEdges, incomingEdges);
-                    if(algorithm.equals("ldg")){
-                    	next_partition = ldg_partition(vertexIdentifier, combinedEdges);
-                    } else if (algorithm.equals("hash")) {
-                        next_partition = hash_partition(vertexIdentifier, combinedEdges);
-                    }
-                    else{
-                    	next_partition = fennel_partition(vertexIdentifier, combinedEdges);
-                    }
+               if(algorithm.equals("ldg")){
+                    next_partition = ldg_partition(vertexIdentifier, outgoingEdges.subList(2, outgoingEdges.size()));
+                } else if(algorithm.equals("hash")){
+                    next_partition = hash_partition(vertexIdentifier, outgoingEdges.subList(2, outgoingEdges.size()));
                 }
-                //otherwise, only consider outgoing edges
-                else {
-                	if(algorithm.equals("ldg")){
-                		next_partition = ldg_partition(vertexIdentifier, outgoingEdges);
-                	} else if(algorithm.equals("hash")){
-                        next_partition = hash_partition(vertexIdentifier, outgoingEdges);
-                    }
-                	else{
-                		next_partition = fennel_partition(vertexIdentifier, outgoingEdges);
-                	}
+                else{
+                    next_partition = fennel_partition(vertexIdentifier, outgoingEdges.subList(2, outgoingEdges.size()));
                 }
+
 
                 vertex_to_partition.put(vertexIdentifier, next_partition);
                 partitionSizes[next_partition]++;
