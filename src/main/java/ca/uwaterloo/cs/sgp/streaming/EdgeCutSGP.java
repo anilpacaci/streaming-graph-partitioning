@@ -119,7 +119,7 @@ public class EdgeCutSGP {
             TieBreaker.add(i);
         }
 
-       argmax = vertexID.hashCode() % this.numberOfPartitions;
+       argmax = Math.floorMod(vertexID.hashCode(), this.numberOfPartitions);
 
         // compute the edge cut
         for(int i = 0 ; i < this.numberOfPartitions ; i++) {
@@ -284,7 +284,7 @@ public class EdgeCutSGP {
         Double balanceSlack = config.getDouble("sgp.balanceslack");
         Double gamma = config.getDouble("sgp.fennel.gamma");
 
-        int[] numberOfPartitions = new int[]{4, 8, 16};
+        int[] numberOfPartitions = new int[]{16};
         String[] algorithms = new String[]{"hash", "ldg", "fennel"};
 
         for(Integer partition : numberOfPartitions) {
