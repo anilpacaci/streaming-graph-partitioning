@@ -26,6 +26,9 @@ fi
 MASTER_SERVICE_NAME="${PROJECT_NAME}"_"${JG_MASTER_NAME}"
 WORKER_SERVICE_NAME="${PROJECT_NAME}"_"${JG_WORKER_NAME}"
 
+# generate the service compile file name based on cluster size
+SERVICE_COMPOSE_FILE=${SERVICE_COMPOSE_FILE/WORKERCOUNT/$JG_WORKER_COUNT}
+
 create_network () 
 {
 	printf "\\n\\n===> CREATE OVERLAY NETWORK"
