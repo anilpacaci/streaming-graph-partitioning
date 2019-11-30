@@ -239,7 +239,7 @@ public class EdgeCutSGP {
                 partitionSizes[next_partition]++;
 
                 if(counter % 1000000 ==0) {
-                    System.out.print("Processed lines: " + counter + "M");
+                    System.out.println("Processed lines: " + counter + "M");
                 }
             }
 
@@ -279,7 +279,7 @@ public class EdgeCutSGP {
         String inputFile = Paths.get(config.getString("sgp.inputfolder") , "adj.txt").toString();
         String[] edgeLabels = config.getStringArray("sgp.edgelabels");
         Integer numberOfVertices = config.getInt("sgp.vertexcount");
-        Integer numberOfEdges = config.getInt("sgp.edgecount");
+        Long numberOfEdges = config.getLong("sgp.edgecount");
         Boolean undirect = config.getBoolean("sgp.undirected");
         Double balanceSlack = config.getDouble("sgp.balanceslack");
         Double gamma = config.getDouble("sgp.fennel.gamma");
