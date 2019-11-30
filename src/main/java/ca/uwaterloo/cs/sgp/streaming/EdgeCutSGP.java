@@ -300,7 +300,7 @@ public class EdgeCutSGP {
 
                 pa.streamingPartition(undirect, algorithm);
 
-                String outputFile = Paths.get(inputFile, algorithm + "-" + partition + ".txt").toString();
+                String outputFile = Paths.get(config.getString("sgp.inputfolder"), algorithm + "-" + partition + ".txt").toString();
                 pa.print(outputFile);
                 System.out.println("Partitioning information is written into: " + outputFile);
             }
