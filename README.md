@@ -45,7 +45,7 @@ We use the following datasets in our experiments in the SIGMOD'19 paper:
 |  LDBC SNB SF1000 |  3.6M |   447M   |    3682    | Heavy Tailed |
 
 
-Download Links:
+Original Download Links:
   - Twitter: https://an.kaist.ac.kr/traces/WWW2010.html
   - UK2007-05: http://law.di.unimi.it/webdata/uk-2007-05/
   - USA-Road Network: http://users.diag.uniroma1.it/challenge9/download.shtml
@@ -65,13 +65,13 @@ Note: We only use the friendship network (`person_knows_person` relationship) of
 `container/analytics` contains the Dockerfile and necessary files to build the PowerLyra docker image. Image is based on the modified version of the PowerLyra, used in our SIGMOD'19 paper. In a nutshell, image is a base Ubuntu 16.04 image, with `openmpi` libraries and PowerLyra binary executables compiled from [PowerLyra](https://github.com/anilpacaci/powerlyra/) installed. 
 In addition, it includes `ssh` configuration to enable passwordless communication between PowerLyra Docker instances, and utility scripts to collect and process system logs.
 
-`container/scripts` contains `swarm.sh`, the bash script that automates experiments, and `swarm.conf`, configuration parameters necessary to execute offline analytics experiments. 
+`scripts/analytics` contains `analytics.sh`, the bash script that automates experiments, and `analytics.conf`, configuration parameters necessary to execute offline analytics experiments. 
 
 #### Parameter Setup
 
-Main configuration files are the `scripts/analytics/swarm.conf`, which is read by `swarm.sh` script and `containers/analytics/docker-compose.yml`. 
+Main configuration file is the `scripts/analytics/analytics.conf`, which is read by `analytics.sh` script and `containers/analytics/docker-compose.yml`. 
 
-Following parameters have default values and therefore not recommended to change. Any change should be propagate to `containers/analytics/docker-compose.yml`
+Following parameters have default values and therefore **not** recommended to change. Any change should be propagate to `containers/analytics/docker-compose.yml`
 
 * PROJECT_NAME: Name of the stack to be deployed to Swarm. Default: `powerlyra`
 * PL_MASTER_NAME: Master Service name, default: `powerlyra-master`
@@ -101,6 +101,7 @@ Experiments are configured using a `json` configuration value under the director
 {
 	"name" : "soc-pokec",
 	"runs" : {
+	    "dataset-name" : "soc-pokec"
 		"snap-dataset" : "soc-pokec/soc-pokec-snap-combined.txt",
 		"adj-dataset" : "soc-pokec/soc-pokec-adjacency-combined.txt",
 		"log-folder" : "soc-pokec-logs",
@@ -110,8 +111,8 @@ Experiments are configured using a `json` configuration value under the director
 		"worker-per-node" : 1,
 		"workers" : [4,8,16],
 		"ingress" : [
-      {"name" : "hdrf"},
-      {"name" : "random"},
+            {"name" : "hdrf"},
+            {"name" : "random"},
 			{"name" : "fennel"}
 		],
 		"algorithm" : [
@@ -130,44 +131,55 @@ Experiments are configured using a `json` configuration value under the director
 ```
 This configuration file defines 18 individual runs over the soc-pokec [dataset](https://snap.stanford.edu/data/soc-Pokec.html). `snap-dataset`, `adj-dataset`, `log-folder`, and `result-folder` are all relative paths under the directories defined in `docker-compose.yml` file. It uses `HDRF`, `Random` and `FENNEL` partitioning algorithms with PageRank and Weakly Connected Components algorithm. For each combination, three different configurations for cluster size is defined via `workers` parameter.
 
+Configuration files used for experiments in SIGMOD'19 paper is provided under ``containers/analytics/parameters``:
+* `twitter.json`
+* `uk2007.json`
+* `usroad.json`
+
 #### Run Experiments
 
 First change working directory to `scripts/analytics` and make sure that `swarm.conf` is defined in the same directory.
 
 * To print the help message:
-```$ ./swarm.sh usage```
+```$ ./analytics.sh usage```
 
 * To initalize the Swarm Cluster:
-```$ ./swarm.sh init```
+```$ ./analytics.sh init```
 It starts the Swarm leader in the given node, then adds every node in the `DOCKER_WORKER_NODES` as Swarm workers. In additions, it creates an overlay network that connects Docker PowerLyra images.
 
 * Build PowerLyra Docker image
 
-```$ ./swarm.sh build```
+```$ ./analytics.sh build```
 
 It starts a private docker service registry in the master machine, then builds and deploys the PowerLyra docker image to this registry where worker nodes can pull the built contaier.
 
 * Start PowerLyra Cluster service
 
-```$ ./swarm.sh start```
+```$ ./analytics.sh start```
 
 Start a PowerLyra instance on each node defined in `DOCKER_WORKER_NODES`.
 
-* Run experiemnts
+* Run experiments
 
-```$ ./swarm.sh run config_file```
+```$ ./analytics.sh run config_file```
 
 Run a set of experiments defined in `config_file`. Note that `config_file` must be a **relative** path under `volumes.parameters.driver_opts.device` directory.
 
+* Plot resulting graphs
+
+```$ ./analytics.sh plot [config_file1, config_file2, config_file3]```
+
+Run `gnuplot` scripts to generate plots from logs of the specified runs. Config files are the ones that are used in the previous step
+
 * Stop PowerLyra containers and Service
 
-```$ ./swarm.sh stop```
+```$ ./analytics.sh stop```
 
 Stop PowerLyra container and the PowerLyra service in the Swarm cluster.
 
 * Cleanup Swarm Cluster
 
-```$ ./swarm.sh destroy```
+```$ ./analytics.sh destroy```
 
 Removes the overlay network and forces each node in the cluster to leave the swarm.
 
@@ -192,10 +204,127 @@ $ mvn clean assembly:assembly
 $ mvn exec:java -Dexec.mainClass="ca.uwaterloo.cs.sgp.streaming.EdgeCutSGP" -Dexec.args="sgp.properties"
 ```
 
+`container/interactive` contains the Dockerfile and necessary files to build the JanusGraph + Cassandra docker images. Image is based on the modified version of the Janusgraph, used in our SIGMOD'19 paper. In a nutshell, image is a base Casssandra 2.1 image Janusgraph codebase compiled from [JanusGraph](https://github.com/anilpacaci/janusgraph/) installed. 
+In addition, it includes `ssh` configuration to enable passwordless communication between JanusGraph Docker instances, and utility scripts to collect and process system logs.
 
-#### Dockerized JanusGraph Experiments
+`scripts/interactive` contains `interactive.sh`, the bash script that automates experiments, and `interactive.conf`, configuration parameters necessary to execute online graph queries experiments. 
 
-**TODO May 16, 2019**: Dockerized version of the JanusGraph cluster will be added.
+#### Parameter Setup
+
+Similar to Offline Graph Analytics, the main configuration file is `scripts/interactive/interactive.conf`, and it is read by `interactive.sh`.
+
+Following parameters have default values and they should **NOT** be modified. Any change should be propogated to Docker compose files under `containers/interactive`.
+
+* PROJECT_NAME: Name of the stack to be deployed to Swarm. Default: `janusgraph`
+* JG_MASTER_NAME: Master service name. Default: `master`
+* JG_WORKER_NAME: Worker service name prefix: `worker`
+* NETWORK_NAME: Name of the overlay network to be created: `janusgraph-network`
+* JANUSGRAPH_IMAGE_TAG="127.0.0.1:5000/janusgraph"
+* MASTER_IMAGE_TAG="127.0.0.1:5000/master"
+* JANUSGRAPH_IMAGE_FILE: The folder containing docker images. Default `../../containers/interactive/db`
+* MASTER_IMAGE_FILE: The folder containing docker images. Default `../../containers/interactive/master`
+* SERVICE_COMPOSE_FILE: The folder containing docker images. Default `../../containers/interactive/docker-compose-WORKERCOUNTnodes.yml`
+
+Following parameters **have to be configured** by the user:
+* JG_WORKER_COUNT: Total number of worker nodes. Make sure that it is not larger than the number of workers listed in `DOCKER_WORKER_NODES`, as it would cause more than 1 instance to be located on the same machine
+* SWARM_MANAGER_IP: IP address of the machine running the experiments. This machine will be used as the Docker Swarm Leader, and it will orchestrate the JanusGraph cluster for experiment runs.
+* DOCKER_WORKER_NODES: File containing list of IP address (except the master node above) of the machines in the cluster. Remember that passwordless ssh needs to be setup between machines in this list.
+
+`containers/interactive/docker-compose.yml` contains three parameters that have to be configured by the user. These are the directories in the host filesystem that will be mounted to JanusGraph images:
+
+* volumes.datasets.driver_opts.device: Directory in host machine that contains the graph datasets to be used in the experiments.
+* volumes.parameters.driver_opts.device: Directory in the host machine that contains experiment configuration files.
+* volumes.results.driver_opts.device: Directoy in the host machine in which output of experiments are logged.
+
+Note: For any configuration file or dataset, always use the relative path under the directories specified above.
+
+#### Experiment Setup
+
+Experiments are configured using a configuration file under the directory specified in above `volumes.parameters.driver_opts.device` directory.
+Unlike Offline Graph Analytics, interactive workloads require JanusGraph database to be populated before an experiment to be executed.
+Therefore, each dataset, partitioning algorithm and partition count triples require a separate configuration file and data loading.
+An example configuration file for a given parameter looks like:
+
+```$xslt
+graph.snb = true
+graph.name = ldbc
+input.base = ldbc/sf10_friendship_adjacency/
+memcached.address = localhost:11211
+thread.count = 32
+batch.size = 50000
+reporting.period = 60
+partition.ingress = hash
+partition.count = 4
+partition.lookup = ldbc/sf1000_friendship_adjacency/part-00000.shuffle.hash.p4
+
+```
+
+Both `input.base` and `partition.lookup` are relative directories under `volumes.datasets.driver_opts.device`.
+
+
+To populate a JanusGraph database from a given configuration file, execute:
+
+```$ ./interactive.sh import config_file"```
+
+Once JanusGraph database is populated, execute following to run interactive workloads that are used in the paper:
+
+```$ ./interactive.sh run config_file```
+
+This command first executes the entire workload to make sure that caches are warm, then runs noth 1-hop and 2-hop traversal workloads under medium and high load, and records all measurements under the result volume.
+
+#### Run Experiments
+
+First change working directory to `scripts/interactive` and make sure that `interactive.conf` is defined in the same directory.
+
+* To print the help message:
+
+```$ ./interactive.sh usage```
+
+* To initalize the Swarm Cluster:
+
+```$ ./interactive.sh init```
+
+It starts the Swarm leader in the given node, then adds every node in the `DOCKER_WORKER_NODES` as Swarm workers. In additions, it creates an overlay network that connects JanusGraph instances.
+
+* Build JanusGraph Docker images
+
+```$ ./interactive.sh build```
+
+It starts a private docker service registry in the master machine, then builds and deploys the JanusGraph docker image to this registry where worker nodes can pull the built contaier.
+
+* Start JanusGraph Cluster service
+
+```$ ./interactive.sh start```
+
+Start a Cassandra instance on each node defined in `DOCKER_WORKER_NODES`. Once Cassandra cluster is up and running, configures a JanusGraph instance on each node.
+
+* Populate JanusGraph database
+
+```$ ./interactive.sh import config_file```
+
+Populate a JanusGraph database from a given configuration file. Note that this step might take a long time depending on the graph size, and it needs to be repeated for each data point (partitioning algorithm, partition count and dataset)
+
+* Run experiments
+
+```$ ./interactive.sh run config_file```
+
+Run all experiments and record measurements on database that is defined by the `config_file` in the previous step. Note that `config_file` must be a **relative** path under `volumes.parameters.driver_opts.device` directory.
+
+* Plot resulting graphs
+
+```$ ./interactive.sh plot [config_file1, config_file2, config_file3]```
+
+Run `gnuplot` scripts to generate plots from logs of the specified runs. Config files are the ones that are used in the previous step
+
+* Stop JanusGraph containers and services
+
+```$ ./interactive.sh stop```
+
+Stop JanusGraph container and the JanusGraph services in the Swarm cluster.
+
+* Cleanup Swarm Cluster
+
+```$ ./interactive.sh destroy```
 
 #### Manual Runs
 
