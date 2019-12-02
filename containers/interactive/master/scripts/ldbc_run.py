@@ -29,7 +29,7 @@ THREADS_PER_WORKER_HIGH = 24
 def cassandra_read_counter(worker_count):
     read_counts = []
 
-    for i in worker_count:
+    for i in range(1, worker_count + 1):
         hostname = WORKER_HOSTNAME_PREFIX + str(i)
         jmxConnection = JMXConnection("service:jmx:rmi:///jndi/rmi://{}:7199/jmxrmi".format(hostname))
         jmxQuery = [JMXQuery("org.apache.cassandra.metrics:type=Keyspace,keyspace=janusgraph,name=ReadLatency")]
