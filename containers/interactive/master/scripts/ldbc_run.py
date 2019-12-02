@@ -103,11 +103,11 @@ def run(graph_name, ingress, nworkers, dataset_location):
     # twohop calls, medium and
     print('Medium load for twohop workload run will be executed')
     result_dir = result_directory(graph_name, ingress, nworkers, WORKLOAD.TWO_HOP, LOAD.MEDIUM_LOAD)
-    subprocess.call(['/sgp/scripts/run-driver.sh', str(nworkers), str(nworkers * THREADS_PER_WORKER_MEDIUM, dataset_location), 'twohop', result_dir])
+    subprocess.call(['/sgp/scripts/run-driver.sh', str(nworkers), str(nworkers * THREADS_PER_WORKER_MEDIUM), dataset_location, 'twohop', result_dir])
     twohop_medium_tput = read_tput(result_dir)
     print('Medium load for twohop workload run will be executed')
     result_dir = result_directory(graph_name, ingress, nworkers, WORKLOAD.TWO_HOP, LOAD.HIGH_LOAD)
-    subprocess.call(['/sgp/scripts/run-driver.sh', str(nworkers), str(nworkers * THREADS_PER_WORKER_HIGH, dataset_location), 'twohop', result_dir])
+    subprocess.call(['/sgp/scripts/run-driver.sh', str(nworkers), str(nworkers * THREADS_PER_WORKER_HIGH), dataset_location, 'twohop', result_dir])
     twohop_high_tput = read_tput(result_dir)
 
     # now parse and write results
