@@ -21,6 +21,7 @@ RUN apt-get update &&\
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 10 &&\ 
   pip3 install --upgrade pip &&\
+  python -m pip install numpy &&\
   python -m pip install jmxquery &&\
   python -m pip install jproperties
   

@@ -29,7 +29,7 @@ fi
 time_compression_ratio=0.0001
 
 # locator should point to remote-objects.yaml
-locator=conf/remote-objects.yaml."$worker_count"
+locator=/sgp/scripts/conf/remote-objects.yaml."$worker_count"
 
 # DO NOT CHANGE
 parameters_dir=$dataset_location/substitution_parameters
@@ -39,9 +39,9 @@ updates_dir=$dataset_location/social_network
 db=ca.uwaterloo.cs.ldbc.interactive.gremlin.GremlinDb
 
 # DO NOT CHANGE jar file for the workload implementation
-workload_impl=lib/snb-interactive-gremlin-1.0-SNAPSHOT-jar-with-dependencies.jar
+workload_impl=/sgp/scripts/lib/snb-interactive-gremlin-1.0-SNAPSHOT-jar-with-dependencies.jar
 
-exec java -Djava.util.logging.config.file=logging.properties -cp "lib/jeeves-0.3-SNAPSHOT.jar:src/main/resources:$workload_impl" \
+exec java -Djava.util.logging.config.file=logging.properties -cp "/sgp/scripts/lib/jeeves-0.3-SNAPSHOT.jar:src/main/resources:$workload_impl" \
     com.ldbc.driver.Client -w com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcSnbInteractiveWorkload -oc $operation_count -P $conf_path \
     -p "ldbc.snb.interactive.parameters_dir|$parameters_dir" -p "ldbc.snb.interactive.updates_dir|$updates_dir" -p "locator|$locator" -db $db \
     -tc $thread_count -tcr $time_compression_ratio -ignore_scheduled_start_times true -rd $result_dir
