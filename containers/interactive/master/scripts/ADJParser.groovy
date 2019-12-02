@@ -562,7 +562,7 @@ class ADJParser {
                             Integer partition = Integer.valueOf(parts[1])
 
                             if(id.startsWith(entityPrefix)) {
-                                partitionMappingServer(id, partition)
+                                partitionMappingServer.set(id, partition)
                             } else {
                                 partitionMappingServer.set(entityPrefix + id, partition)
                             }
