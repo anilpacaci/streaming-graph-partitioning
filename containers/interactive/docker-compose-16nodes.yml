@@ -167,6 +167,7 @@ services:
           - '{{.Service.Name}}-{{.Task.Slot}}'
   worker9:
     image: 127.0.0.1:5000/janusgraph
+    command: bash -c 'if [ -z "$$(ls -A /var/lib/cassandra/)" ] ; then sleep 30; fi && /docker-entrypoint.sh cassandra'    
     volumes:
       - results:/sgp/results/
     deploy:
