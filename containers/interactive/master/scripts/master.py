@@ -39,7 +39,7 @@ PARAMETER_FILES = sys.argv[1:]
 # in a nutshell it calls partitioning info initialization scripts, then db loader script
 def populate_db(parameter_file):
     # load partitioning information
-    print ('/sgp/janusgraph/bin/gremlin.sh -e /sgp/scripts/SNBParser.groovy {}'.format(parameter_file))
+    print ('/sgp/janusgraph/bin/gremlin.sh -e /sgp/scripts/ADJParser.groovy {}'.format(parameter_file))
     subprocess.call(['/sgp/janusgraph/bin/gremlin.sh', '-e', '/sgp/scripts/ADJParser.groovy', parameter_file])
 
 # runs an experiment over a configuration given in the parameter file file and logs results for further processing
