@@ -149,11 +149,35 @@ do
 done
 
 # start gremlin-server after all cassandra nodes are up
-while [$(nodetool status | grep UN | wc -l) -lt $JANUSGRAPH_CLUSTER_SIZE]
+while [ $(nodetool status | grep UN | wc -l) -lt $JANUSGRAPH_CLUSTER_SIZE ]
 do
 	echo "Cassandra cluster is not ready, waiting 30 seconds"
 	sleep 30;
 done
 
-sleep 30;
+echo "Waiting 60 seconds for schema disagreements to resolve"
+sleep 60;
+
+# cassandra cluster is ready, now setup the JanusGraph
+# first let one node to initialize the keyspace to eliminate schema conflicts
+if [ $CASSANDRA_INITIAL_TOKEN != "0" ]; then
+  # not a seed note, wait until keyspace janusgraph is ready
+  while [ $(nodetool describering janusgraph | grep TokenRange | wc -l) -lt $(($JANUSGRAPH_CLUSTER_SIZE + 1)) ]
+  do
+    echo "Keyspace janusgraph is not initialized, waiting 10 seconds"
+    sleep 30;
+  done
+  echo "Keyspace janusgraph is initialized, start gremlin server"
+  sleep 30;
+else 
+  # seed node, start gremlin server right away
+  while [ $(nodetool describecluster | grep ": \[" | wc -l) -gt 1 ]
+  do
+    echo "Waiting cassandra schema to merge"
+    sleep 10;
+  done
+  echo "Cassandra Seed node starting Gremlin Server"
+fi
+
+# start gremlin server
 exec "$JANUSGRAPH_HOME/bin/gremlin-server.sh"
