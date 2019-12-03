@@ -51,7 +51,8 @@ RUN chmod -R 600 ${SSHDIR}/* \
 # # initialization script
 # # ------------------------------------------------------------
 # copy JanusGraph Codebase
-COPY janusgraph/ ${JANUSGRAPH_HOME}
+COPY janusgraph.tar.gz /sgp/
+RUN tar -xzvf /sgp/janusgraph.tar.gz
 COPY scripts/ /sgp/
 
 # copy cassandra specific configuration

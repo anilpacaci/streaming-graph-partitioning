@@ -100,7 +100,7 @@ if [ "$1" = 'cassandra' ]; then
 		"auto_bootstrap: false"
  
   _sed-in-place "$CASSANDRA_CONFIG/cassandra-env.sh" \
-    -r 's/^(# )?(RMI_HOSTNAME=).*/\2 '"$(_ip_address)"'/'
+    -r 's/^(# )?(RMI_HOSTNAME=).*/\2'"$(_ip_address)"'/'
 
 	for yaml in \
 		broadcast_address \
