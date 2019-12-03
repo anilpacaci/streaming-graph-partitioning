@@ -25,7 +25,8 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 10 &&\
   python -m pip install jmxquery &&\
   python -m pip install jproperties
   
-COPY janusgraph ${JANUSGRAPH_HOME}
+COPY janusgraph.tar.gz /sgp/
+RUN tar -xzvf /sgp/janusgraph.tar.gz
 COPY scripts /sgp/scripts
 RUN chmod +x -R /sgp/scripts 
 
