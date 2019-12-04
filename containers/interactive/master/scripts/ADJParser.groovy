@@ -48,6 +48,7 @@ import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -163,6 +164,11 @@ class ADJParser {
         AtomicLong counter
         ConcurrentHashMap<String, Long> idMapping
         boolean isGraphSNB
+        String entityName = "person"
+        String edgeLabel = "knows"
+
+        String IID = "iid"
+        String IID_LONG = "iid_long"
 
         ADJGraphLoader(JanusGraph graph, SharedGraphReader graphReader, ElementType elementType, Map<String, Long> idMapping, boolean isGraphSNB) {
             this.graph = graph
@@ -174,10 +180,9 @@ class ADJParser {
         }
 
         Vertex addVertex(String identifier) {
-			String entityName = "person"
-            Map<Object, Object> propertiesMap = new HashMap<>();
-            propertiesMap.put("iid", entityName + ":" + identifier);
-            propertiesMap.put("iid_long", Long.parseLong(identifier))
+			Map<Object, Object> propertiesMap = new HashMap<>();
+            propertiesMap.put(IID, entityName + ":" + identifier);
+            propertiesMap.put(IID_LONG, Long.parseLong(identifier))
 
             propertiesMap.put(T.label, entityName);
 
@@ -194,17 +199,7 @@ class ADJParser {
 
 
         void snbLoader() {
-            SimpleDateFormat birthdayDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            birthdayDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-            SimpleDateFormat creationDateDateFormat =
-                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-            creationDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"))
-            SimpleDateFormat joinDateDateFormat =
-                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-            joinDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
             String[] colNames = graphReader.getColNames()
-
-            String edgeLabel = "knows"
 
             boolean txSucceeded;
             long txFailCount;
@@ -224,8 +219,6 @@ class ADJParser {
                             String[] colVals = line.split("\\|");
 
                             if (elementType == ElementType.VERTEX) {
-                                Map<Object, Object> propertiesMap = new HashMap<>();
-
                                 String identifier;
                                 for (int j = 0; j < colVals.length; ++j) {
                                     if (colNames[j].equals("id")) {
@@ -295,18 +288,6 @@ class ADJParser {
         }
 
         void adjLoader() {
-            SimpleDateFormat birthdayDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            birthdayDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-            SimpleDateFormat creationDateDateFormat =
-                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-            creationDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"))
-            SimpleDateFormat joinDateDateFormat =
-                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-            joinDateDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-            // WARN default entity name we use to make existing SNB queries compatible with twitter and us and uk datasets
-            String entityName = "person"
-            String edgeLabel = "knows"
-
             boolean txSucceeded;
             long txFailCount;
             long currentBatchSize
@@ -429,7 +410,7 @@ class ADJParser {
         Configuration configuration = new PropertiesConfiguration(configurationFile);
 
         //import partition lookup
-        partitionLookupImport(configuration)
+        int numberOfVertices = partitionLookupImport(configuration)
 
 
         // Full paths for edge and vertex files
@@ -477,7 +458,7 @@ class ADJParser {
         int progReportPeriod = configuration.getInt("reporting.period")
 
         String[] servers = configuration.getStringArray("memcached.address")
-        ConcurrentHashMap<String, Long> idMapping = new ConcurrentHashMap<String, Long>();
+        ConcurrentHashMap<String, Long> idMapping = new ConcurrentHashMap<String, Long>(numberOfVertices);
 
         ExecutorService executor = Executors.newFixedThreadPool(threadCount)
 
@@ -511,12 +492,7 @@ class ADJParser {
     }
 
 
-	static void partitionLookupImport(String configurationFile) {
-		Configuration configuration = new PropertiesConfiguration(configurationFile);
-		partitionLookupImport(configuration);
-	}
-
-    static void partitionLookupImport(Configuration configuration) {
+    static int partitionLookupImport(Configuration configuration) {
         String entityPrefix = "person:";
 
         String partitionLookup = configuration.getString("partition.lookup")
@@ -534,7 +510,7 @@ class ADJParser {
         int batchSize = configuration.getInt("batch.size")
         int threadCount = configuration.getInt("thread.count")
 
-        AtomicLong counter = new AtomicLong(0)
+        AtomicInteger counter = new AtomicInteger(0)
 
         ExecutorService executor = Executors.newFixedThreadPool(threadCount)
 
@@ -581,6 +557,9 @@ class ADJParser {
         }
 
         executor.invokeAll(partitionImporters)
+
+        // return the total number of vertex ids imported
+        return counter.get()
     }
 
     /**
