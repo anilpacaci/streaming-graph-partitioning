@@ -21,7 +21,6 @@ hybrid_cut_algorithms = ["hybrid", "hybrid_ginger"]
 edge_cut_algorithms = ["random_ec", "ldg", "fennel", "metis"]
 
 workloads = ["pagerank", "sssp", "connected_component"]
-partitions = [8, 16, 32, 64, 128]
 
 # resulting map that stores all dataset and result files
 result_map = {}

@@ -22,7 +22,6 @@ hybrid_cut_algorithms = ["hybrid", "hybrid_ginger"]
 edge_cut_algorithms = ["random_ec", "ldg", "fennel", "metis"]
 
 workloads = ["pagerank", "sssp", "connected_component"]
-partitions = [8, 16, 32, 64, 128]
 
 # materialize the given dataset, call the gnuplot script and finally remove the materialized dataset
 def gnuplot_call(script, inputDF, result_dataset_filename, output_filename):
@@ -57,6 +56,9 @@ def generate_load_imbalance(dataset_name, dataset):
     newDF = pandas.DataFrame(columns=['ingress', 'min', 'max', '25', '50', '75'])
     # extract data from the master table
     extracteddata = dataset[(dataset['algorithm'] == DEFAULT_WORKLOAD) & (dataset['partitions'] == DEFAULT_PARTITION)][['ingress', 'li_min', 'li_max', 'li_25', 'li_50', 'li_75']]
+    if extracteddata.ingress.nunique() is not len(sgp_algorithms):
+        print("Graph: {} with {} partitions do not have results all ten partitioning algorithms".format(dataset_name, str(DEFAULT_PARTITION)))
+        return
     for index, row in extracteddata.iterrows():
         newDF = newDF.append({'ingress': row['ingress'], 'min' : row['li_min'], 'max' : row['li_max'], '25' : row['li_25'], '50' : row['li_50'], '75' : row['li_75']}, ignore_index=True)
     # generate plot using the generated data
@@ -68,8 +70,14 @@ def generate_load_imbalance(dataset_name, dataset):
 def generate_rf(dataset_name, dataset):
     # create new data frame
     newDF = pandas.DataFrame(columns=['partitions'] + sgp_algorithms)
+    # generate partitions array from the data and remove 0
+    partitions = dataset.partitions.unique().tolist()
+    partitions.remove(0)
     for partition in partitions:
         extracteddata = dataset[(dataset['algorithm'] == DEFAULT_WORKLOAD) & (dataset['partitions'] == partition)][['ingress', 'rf']]
+        if extracteddata.ingress.nunique() is not len(sgp_algorithms):
+            print("Graph: {} with {} partitions do not have results all ten partitioning algorithms".format(dataset_name, str(partition)))
+            continue
         sgpToReplicationFactor = dict(zip(extracteddata.ingress, extracteddata.rf))
         sgpToReplicationFactor['partitions'] = partition
         newDF = newDF.append(sgpToReplicationFactor, ignore_index=True)
@@ -82,8 +90,14 @@ def generate_rf(dataset_name, dataset):
 def generate_time(dataset_name, dataset):
     for workload in workloads:
         newDF = pandas.DataFrame(columns=['partitions'] + sgp_algorithms)
+        # generate partitions array from the data and remove 0
+        partitions = dataset.partitions.unique().tolist()
+        partitions.remove(0)
         for partition in partitions:
             extracteddata = dataset[(dataset['algorithm'] == workload) & (dataset['partitions'] == partition)][['ingress', 'total_time']]
+            if extracteddata.ingress.nunique() is not len(sgp_algorithms):
+                print("Graph: {} with {} partitions do not have results all ten partitioning algorithms for workload {}".format(dataset_name, str(partition), workload))
+                continue
             sgpToTime = dict(zip(extracteddata.ingress, extracteddata.total_time))
             sgpToTime['partitions'] = partition
             newDF = newDF.append(sgpToTime, ignore_index=True)
