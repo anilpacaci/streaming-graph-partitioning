@@ -19,11 +19,11 @@ result_dir=$5
 if [ "$workload" == "twohop" ]; then
     echo "2-hop query workload"
     conf_path=/sgp/scripts/conf/ldbc-q12-twohop.properties
-    operation_count=10000
+    operation_count=100000
 else
     echo "1-hop query workload"
     conf_path=/sgp/scripts/conf/ldbc-q11-onehop.properties
-    operation_count=100000
+    operation_count=1000000
 fi
 
 time_compression_ratio=0.0001
