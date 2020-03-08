@@ -84,7 +84,7 @@ def generate_rf(dataset_name, dataset):
     # generate plot using the generated data
     result_dataset_filename =  'rf-{}'.format(dataset_name)
     output_filename = 'rf-{}'.format(dataset_name)
-    gnuplot_call(LI_PERCENTILE_SCRIPT, newDF, result_dataset_filename, output_filename)
+    gnuplot_call(RF_SCRIPT, newDF, result_dataset_filename, output_filename)
 
 # plot time-line graph
 def generate_time(dataset_name, dataset):
