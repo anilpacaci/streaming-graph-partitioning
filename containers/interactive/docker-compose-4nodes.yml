@@ -96,13 +96,13 @@ volumes:
     driver_opts:
       type: "none"
       o: "bind"
-      device: "/home/apacaci/datasets"
+      device: "/home/apacaci/sgp-framework/streaming-graph-partitioning/datasets"
   results:
     driver: local
     driver_opts:
       type: "none"
       o: "bind"
-      device: "/home/apacaci/sgp-framework/janusgraph-cluster-results"
+      device: "/home/apacaci/sgp-framework/streaming-graph-partitioning/results/janusgraph-results"
   parameters:
     driver: local
     driver_opts:
