@@ -64,7 +64,7 @@ fi
 
 # allow the container to be started with `--user`
 #if [ "$1" = 'cassandra' -a "$(id -u)" = '0' ]; then
-#	find /var/lib/cassandra /var/log/cassandra "$CASSANDRA_CONFIG" \
+#	find /var/lib/cassandra /var/log/cassandra "$CASSANDRA_CONF" \
 #		\! -user cassandra -exec chown cassandra '{}' +
 #	exec gosu cassandra "$BASH_SOURCE" "$@"
 #fi
@@ -93,13 +93,13 @@ if [ "$1" = 'cassandra' ]; then
 	fi
 	: ${CASSANDRA_SEEDS:="$CASSANDRA_BROADCAST_ADDRESS"}
 
-	_sed-in-place "$CASSANDRA_CONFIG/cassandra.yaml" \
+	_sed-in-place "$CASSANDRA_CONF/cassandra.yaml" \
 		-r 's/(- seeds:).*/\1 "'"$CASSANDRA_SEEDS"'"/'
 
-	_sed-append "$CASSANDRA_CONFIG/cassandra.yaml" \
+	_sed-append "$CASSANDRA_CONF/cassandra.yaml" \
 		"auto_bootstrap: false"
  
-  _sed-in-place "$CASSANDRA_CONFIG/cassandra-env.sh" \
+  _sed-in-place "$CASSANDRA_CONF/cassandra-env.sh" \
     -r 's/^(# )?(RMI_HOSTNAME=).*/\2'"$(_ip_address)"'/'
 
 	for yaml in \
@@ -117,7 +117,7 @@ if [ "$1" = 'cassandra' ]; then
 		var="CASSANDRA_${yaml^^}"
 		val="${!var}"
 		if [ "$val" ]; then
-			_sed-in-place "$CASSANDRA_CONFIG/cassandra.yaml" \
+			_sed-in-place "$CASSANDRA_CONF/cassandra.yaml" \
 				-r 's/^(# )?('"$yaml"':).*/\2 '"$val"'/'
 		fi
 	done
@@ -126,7 +126,7 @@ if [ "$1" = 'cassandra' ]; then
 		var="CASSANDRA_${rackdc^^}"
 		val="${!var}"
 		if [ "$val" ]; then
-			_sed-in-place "$CASSANDRA_CONFIG/cassandra-rackdc.properties" \
+			_sed-in-place "$CASSANDRA_CONF/cassandra-rackdc.properties" \
 				-r 's/^('"$rackdc"'=).*/\1 '"$val"'/'
 		fi
 	done

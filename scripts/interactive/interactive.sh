@@ -221,7 +221,7 @@ run_command()
 
 get_cluster_size()
 {
-	func_result="$(run_command janusgraph_worker1 'nodetool status' | grep 'UN' | wc -l)"
+	func_result="$(run_command janusgraph_worker1 '/opt/cassandra/bin/nodetool status' | grep 'UN' | wc -l)"
 
     echo "$func_result"
 }
