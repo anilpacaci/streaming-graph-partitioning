@@ -19,12 +19,12 @@ result_map = {}
 
 # read input arguments
 if len(sys.argv) < 2:
-    print "Supply parameter files for which plots will be generated"
+    print ("Supply parameter files for which plots will be generated")
     sys.exit()
 
 # read input configuration
 for parameter_file in sys.argv[1:]:
-    print "Read parameter file {}".format(parameter_file)
+    print ("Read parameter file {}".format(parameter_file))
 
     full_parameter_path = os.path.join(parameters_volume, parameter_file)
     if not os.path.exists(full_parameter_path):
@@ -33,15 +33,15 @@ for parameter_file in sys.argv[1:]:
         continue
 
     config = Properties()
-    with open(parameter_file, 'rb') as pf:
+    with open(full_parameter_path, 'rb') as pf:
         config.load(pf, 'utf-8')
 
-    dataset_name = config.properties['graph_name']
+    dataset_name = config.properties['graph.name']
     ingress = config.properties['partition.ingress']
     nworkers = int(config.properties['partition.count'])
     aggregated_results_filename = os.path.join(result_volume, "aggregated.csv")
     if os.path.exists(aggregated_results_filename) is not True:
-        print "{} does not have a valid results file {}".format(dataset_name, aggregated_results_filename)
+        print("{} does not have a valid results file {}".format(dataset_name, aggregated_results_filename))
         continue
     aggregated_results = pandas.read_csv(aggregated_results_filename, header=0)
     filtered_per_graph = aggregated_results[aggregated_results['graph'] == dataset_name]

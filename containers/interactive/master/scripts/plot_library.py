@@ -27,7 +27,7 @@ def gnuplot_call(script, inputDF, result_dataset_filename, output_filename):
     subprocess.call(['gnuplot', '-e', 'input=\'{}\';output=\'{}\''.format(result_dataset_fullpath, output_fullpath), script], cwd=result_volume)
     # delete the temp csv file
     os.remove(result_dataset_fullpath)
-    print "Plot generated: {}".format(output_fullpath)
+    print ("Plot generated: {}".format(output_fullpath))
 
 
 # plot load imbalance using default workload and default partitioning
@@ -54,7 +54,7 @@ def generate_tput(dataset_name, dataset):
     for workload in workloads:
         newDF = pandas.DataFrame(columns=['ingress', 'medium', 'high'])
         for partition in partitions:
-            extracteddata = dataset[(dataset['ingress'] == workload) & (dataset['partitions'] == partition)][['ingress', 'tput_medium', 'tput_high']]
+            extracteddata = dataset[(dataset['ingress'] == workload) & (dataset['partition'] == partition)][['ingress', 'tput_medium', 'tput_high']]
             if extracteddata.ingress.nunique() is not len(edge_cut_algorithms):
                 print("Graph: {} with {} partitions do not have results all four partitioning algorithms".format(dataset_name, str(partition)))
                 continue
