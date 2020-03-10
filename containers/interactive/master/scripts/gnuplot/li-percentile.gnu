@@ -9,7 +9,7 @@ output_file = output.".eps"
 print "reading: ".input_file
 
 set xrange [-0.5:3.5]
-set xlabel "Number of Partitions"
+set xlabel "SGP Algorithm"
 set ylabel "Request"
 
 set output output_file

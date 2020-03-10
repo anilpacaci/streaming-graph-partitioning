@@ -17,9 +17,9 @@ output_file = output.".eps"
 print "reading: ".input_file
 
 set output output_file
+set yrange [ 0 : * ]
 
-unset key
-set title "USA-Road"
+#unset key
 plot for[col=2:3] input_file using (column(col)):xtic(1) t columnhead(col)
 
 print "Plot generated: ".output_file
