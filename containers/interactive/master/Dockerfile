@@ -17,7 +17,7 @@ ENV JANUSGRAPH_HOME=/sgp/janusgraph
 # # ------------------------------------------------------------
 
 RUN apt-get update &&\
-	apt-get -y install default-jdk openssh-server python python3-pip dnsutils vim sudo memcached
+	apt-get -y install default-jdk openssh-server python python3-pip dnsutils vim sudo memcached gnuplot
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 10 &&\ 
   pip3 install --upgrade pip &&\
