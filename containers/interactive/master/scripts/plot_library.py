@@ -8,8 +8,8 @@ result_volume = "/sgp/results/"
 parameters_volume = "/sgp/parameters/"
 
 # path for scripts
-LI_PERCENTILE_SCRIPT = 'sgp/scripts/gnuplot/li-percentile.gnu'
-TPUT_SCRIPT = 'sgp/scripts/gnuplot/tput-bar.gnu'
+LI_PERCENTILE_SCRIPT = '/sgp/scripts/gnuplot/li-percentile.gnu'
+TPUT_SCRIPT = '/sgp/scripts/gnuplot/tput-bar.gnu'
 
 DEFAULT_PARTITION = 16
 DEFAULT_WORKLOAD = 'onehop'
@@ -23,7 +23,7 @@ partitions = [4, 8, 16, 32]
 def gnuplot_call(script, inputDF, result_dataset_filename, output_filename):
     result_dataset_fullpath = os.path.join(result_volume, result_dataset_filename)
     output_fullpath = os.path.join(result_volume, output_filename)
-    inputDF.to_csv(result_dataset_filename, sep=',', index=False)
+    inputDF.to_csv(result_dataset_fullpath, sep=',', index=False)
     subprocess.call(['gnuplot', '-e', 'input=\'{}\';output=\'{}\''.format(result_dataset_fullpath, output_fullpath), script], cwd=result_volume)
     # delete the temp csv file
     os.remove(result_dataset_fullpath)
@@ -36,7 +36,7 @@ def generate_load_imbalance(dataset_name, dataset):
     newDF = pandas.DataFrame(columns=['ingress', 'min', 'max', '25', '50', '75'])
     # extract data from the master table
     for partition in partitions:
-        extracteddata = dataset[(dataset['ingress'] == DEFAULT_WORKLOAD) & (dataset['partition'] == partition)][['ingress', 'li_min', 'li_max', 'li_25', 'li_50', 'li_75']]
+        extracteddata = dataset[(dataset['workload'] == DEFAULT_WORKLOAD) & (dataset['partition'] == partition)][['ingress', 'li_min', 'li_max', 'li_25', 'li_50', 'li_75']]
         if extracteddata.ingress.nunique() is not len(edge_cut_algorithms):
             print("Graph: {} with {} partitions do not have results all four partitioning algorithms".format(dataset_name, str(partition)))
             continue
@@ -54,7 +54,7 @@ def generate_tput(dataset_name, dataset):
     for workload in workloads:
         newDF = pandas.DataFrame(columns=['ingress', 'medium', 'high'])
         for partition in partitions:
-            extracteddata = dataset[(dataset['ingress'] == workload) & (dataset['partition'] == partition)][['ingress', 'tput_medium', 'tput_high']]
+            extracteddata = dataset[(dataset['workload'] == workload) & (dataset['partition'] == partition)][['ingress', 'tput_medium', 'tput_high']]
             if extracteddata.ingress.nunique() is not len(edge_cut_algorithms):
                 print("Graph: {} with {} partitions do not have results all four partitioning algorithms".format(dataset_name, str(partition)))
                 continue
