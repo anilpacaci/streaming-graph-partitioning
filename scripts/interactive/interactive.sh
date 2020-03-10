@@ -328,6 +328,7 @@ usage()
 COMMAND=$1
 PARAM1=$2
 PARAM2="$3"
+PARAMS=("$@")
 
 case "$COMMAND" in
 	(start) 
@@ -360,6 +361,16 @@ case "$COMMAND" in
 		import_dataset $PARAM1
 		exit 0
 	;;
+  (plot)
+     if [ $# -eq 1 ]
+     then
+       echo "usage: ${0} ${COMMAND} [config_file_1, ..., config_file_n]"
+       exit 2
+     fi
+     echo $COMMAND " - " $PARAM1 " - " $PARAM2 " - " ${PARAMS[@]}
+     generate_plots "${PARAMS[@]}"
+     exit 0
+  ;;
 	(cmd)
 		if [ -z $PARAM1 ] || [ -z $PARAM2 ]
 		then
