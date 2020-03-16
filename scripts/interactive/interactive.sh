@@ -117,10 +117,18 @@ destroy_swarm()
     printf "\\n"
     pdsh -w ^${DOCKER_WORKER_NODES} -R ssh "docker swarm leave"
 
-	printf "\\n\\n===> MASTER NODE LEAVE\\n"
-	echo "$ docker swarm leave -f"
+    echo "$ pdsh -w ^${DOCKER_WORKER_NODES} -R ssh \"docker system prune --force --volumes \""
+    printf "\\n"
+    pdsh -w ^${DOCKER_WORKER_NODES} -R ssh "docker system prune --force --volumes"
+
+	  printf "\\n\\n===> MASTER NODE LEAVE\\n"
+	  echo "$ docker swarm leave -f"
     printf "\\n"
     docker swarm leave -f
+  
+    echo "$ docker system prune --force --volumes"
+    printf "\\n"
+    docker system prune --force --volumes
 }
 
 start_service()
