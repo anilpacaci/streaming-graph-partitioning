@@ -56,7 +56,7 @@ class PowerLyraRun:
 		self.ingress = ingress["name"]
 
 		if self.ingress == "metis":
-			self.lookup = ingress["lookup"][str(machines)]
+			self.lookup = os.path.join(dataset_volume, ingress["lookup"][str(machines)])
 
 		if "source" in algorithm:	
 			self.source = algorithm["source"]
